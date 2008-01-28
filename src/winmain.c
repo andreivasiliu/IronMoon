@@ -178,7 +178,7 @@ void win_sig_segv_handler( int sig )
    
    fclose( fl );
    
-   MessageBox( NULL, "Segmentation Fault signal! File 'crash.log' written.", "MudBot", 0 );
+   MessageBox( NULL, "Segmentation Fault signal! File 'crash.log' written.", "IronMoon", 0 );
    exit( 1 );
 }
 
@@ -224,7 +224,7 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i
    
    if ( !control )
      {
-	MessageBox( NULL, "At least one port to listen on must be defined!", "MudBot Warning", 0 );
+	MessageBox( NULL, "At least one port to listen on must be defined!", "IronMoon Warning", 0 );
      }
    
    signal( SIGSEGV, win_sig_segv_handler );
@@ -287,7 +287,7 @@ int CreateMainWindow( HINSTANCE hInstance )
    
    /*** Create our Main Window. ***/
    
-   sprintf( title, "MudBot v%d.%d", main_version_major, main_version_minor );
+   sprintf( title, "IronMoon v%d.%d", main_version_major, main_version_minor );
    
    hwndMain = CreateWindowEx( 0, "MainWindowClass", title,
 			      WS_OVERLAPPEDWINDOW,
@@ -610,7 +610,7 @@ void LoadComposer( )
 
 void MakeTrayTooltip( char *buf )
 {
-   sprintf( buf, "MudBot v%d.%d (Client: %s - Server: %s)",
+   sprintf( buf, "IronMoon v%d.%d (Client: %s - Server: %s)",
 	    main_version_major, main_version_minor,
 	    client ? ( client_hostname[0] ? client_hostname : "unknown" ) : "not connected",
 	    server ? ( server_hostname[0] ? server_hostname : "unknown" ) : "not connected" );
@@ -1065,12 +1065,12 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam 
       case WM_CLOSE:
 	if ( server )
 	  {
-	     if ( MessageBox( hwndMain, "MudBot is still connected to a server. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
+	     if ( MessageBox( hwndMain, "IronMoon is still connected to a server. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
 	       break;
 	  }
 	else if ( client )
 	  {
-	     if ( MessageBox( hwndMain, "Closing MudBot will disconnect the current Client. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
+	     if ( MessageBox( hwndMain, "Closing IronMoon will disconnect the current Client. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
 	       break;
 	  }
 	

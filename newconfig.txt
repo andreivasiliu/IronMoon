@@ -1,0 +1,65 @@
+## IronMoon configuration file.
+##
+## If there's something you don't understand here, just leave it as it is.
+
+
+
+# Ports to listen on, comma-separated. They can be as many as you want.
+# These will accept connections only from localhost.
+listen_ports = { 1523 }
+
+
+# And these allow you to connect from another computer.
+unsecure_listen_ports = { }
+
+
+# MUD Server address
+server = {
+  host = imperian.com
+  port = 23
+}
+
+
+# ILua modules. Examples on how to set up a basic module at:
+# http://www.to.be/created
+ilua_modules = {
+  Mapper = { loader.lua dir=mapper }
+}
+
+
+# Advanced. Skip these if you're not interested.
+advanced = {
+  # Proxy, if relevant. It can be "http", "socks5", or "none".
+  proxy = {
+    type = none
+    host = none
+    port = none
+  }
+  
+  
+  # Autologin through ATCP. Keep your password here at your own risk!
+  autologin = {
+    user = none
+    pass = none
+  }
+
+
+  # Name to use on ATCP authentication. To disable ATCP, use "none".
+  # To login as "IronMoon <version>", use "default".
+  # Other examples: "Nexus 3.0.1", "JavaClient 2.4.8"
+  atcp_login_as = default
+
+  
+  # MUD Client Compression Protocol.
+  enable_mccp = yes
+
+
+  # MUD eXtension Protocol. It can be "disabled", "locked", "open", or "secure".
+  # Read the MXP specifications on www.zuggsoft.com for more info.
+  default_mxp_mode = open
+
+
+  # Telnet Go-Ahead sequence. Some clients can't live with it, some can't without it.
+  strip_telnet_ga = no
+}
+

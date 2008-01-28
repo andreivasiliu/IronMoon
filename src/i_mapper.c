@@ -143,7 +143,6 @@ int sense_message;
 int scout_list;
 int evstatus_list;
 int pet_list;
-int destroying_world;
 int door_closed;
 int door_locked;
 int locate_arena;
@@ -772,8 +771,6 @@ void destroy_map( )
    
    DEBUG( "destroy_map" );
    
-   destroying_world = 1;
-   
    /* Rooms. */
    for ( room = world; room; room = next_room )
      {
@@ -801,8 +798,6 @@ void destroy_map( )
    /* Global special exits. */
    while ( global_special_exits )
      destroy_exit( global_special_exits );
-   
-   destroying_world = 0;
    
    world = world_last = NULL;
    areas = areas_last = NULL;
@@ -3479,6 +3474,77 @@ void save_binary_map( char *file )
 
 
 
+int check_map( )
+{
+   DEBUG( "check_map" );
+   
+   
+   return 0;
+}
+
+
+
+void convert_vnum_exits( )
+{
+   ROOM_DATA *room, *r;
+   EXIT_DATA *spexit;
+   int i;
+   
+   DEBUG( "convert_vnum_exits" );
+   
+   for ( room = world; room; room = room->next_in_world )
+     {
+        /* Normal exits. */
+        for ( i = 1; dir_name[i]; i++ )
+          {
+             if ( room->vnum_exits[i] )
+               {
+                  r = get_room( room->vnum_exits[i] );
+                  
+                  if ( !r )
+                    {
+                       debugf( "Can't link room %d (%s) to %d.",
+                               room->vnum, room->name, room->vnum_exits[i] );
+                       continue;
+                    }
+                  link_rooms( room, i, r );
+                  room->vnum_exits[i] = 0;
+               }
+          }
+        
+        /* Special exits. */
+        for ( spexit = room->special_exits; spexit; spexit = spexit->next )
+          {
+             if ( spexit->vnum < 0 )
+               spexit->to = NULL;
+             else
+               {
+                  if ( !( spexit->to = get_room( spexit->vnum ) ) )
+                    debugf( "Can't link room %d (%s) to %d. (special exit)",
+                            room->vnum, room->name, spexit->vnum );
+                  else
+                    link_special_exit( room, spexit, spexit->to );
+               }
+          }
+     }
+   
+   for ( spexit = global_special_exits; spexit; spexit = spexit->next )
+     {
+        if ( spexit->vnum < 0 )
+          spexit->to = NULL;
+        else
+          {
+             if ( !( spexit->to = get_room( spexit->vnum ) ) )
+               {
+                  debugf( "Can't link global special exit '%s' to %d.",
+                          spexit->command, spexit->vnum );
+               }
+          }
+     }
+}
+
+
+
 int load_binary_map( char *file )
 {
    AREA_DATA area, *a;
@@ -3489,6 +3555,8 @@ int load_binary_map( char *file )
    char check, *type_name;
    int types, areas, rooms, exits;
    int i, j, k;
+   
+   destroy_map( );
    
    DEBUG( "load_binary_map" );
    
@@ -3594,83 +3662,14 @@ int load_binary_map( char *file )
         return 1;
      }
    
-   return 0;
+   convert_vnum_exits( );
+   
+   return check_map( );
 }
 
 
 
-int check_map( )
-{
-   DEBUG( "check_map" );
-   
-   
-   return 0;
-}
-
-
-
-void convert_vnum_exits( )
-{
-   ROOM_DATA *room, *r;
-   EXIT_DATA *spexit;
-   int i;
-   
-   DEBUG( "convert_vnum_exits" );
-   
-   for ( room = world; room; room = room->next_in_world )
-     {
-        /* Normal exits. */
-        for ( i = 1; dir_name[i]; i++ )
-          {
-             if ( room->vnum_exits[i] )
-               {
-                  r = get_room( room->vnum_exits[i] );
-                  
-                  if ( !r )
-                    {
-                       debugf( "Can't link room %d (%s) to %d.",
-                               room->vnum, room->name, room->vnum_exits[i] );
-                       continue;
-                    }
-                  link_rooms( room, i, r );
-                  room->vnum_exits[i] = 0;
-               }
-          }
-        
-        /* Special exits. */
-        for ( spexit = room->special_exits; spexit; spexit = spexit->next )
-          {
-             if ( spexit->vnum < 0 )
-               spexit->to = NULL;
-             else
-               {
-                  if ( !( spexit->to = get_room( spexit->vnum ) ) )
-                    debugf( "Can't link room %d (%s) to %d. (special exit)",
-                            room->vnum, room->name, spexit->vnum );
-                  else
-                    link_special_exit( room, spexit, spexit->to );
-               }
-          }
-     }
-   
-   for ( spexit = global_special_exits; spexit; spexit = spexit->next )
-     {
-        if ( spexit->vnum < 0 )
-          spexit->to = NULL;
-        else
-          {
-             if ( !( spexit->to = get_room( spexit->vnum ) ) )
-               {
-                  debugf( "Can't link global special exit '%s' to %d.",
-                          spexit->command, spexit->vnum );
-               }
-          }
-     }
-}
-
-
-
-int load_map( char *file )
+int load_map( const char *file )
 {
    AREA_DATA *area = NULL;
    ROOM_DATA *room = NULL;
@@ -3681,6 +3680,9 @@ int load_map( char *file )
    char *eof;
    int section = 0;
    int nr = 0, i;
+   
+   /* Loading a map over another is a bad thing. */
+   destroy_map( );
    
    DEBUG( "load_map" );
    
@@ -4165,7 +4167,9 @@ int load_map( char *file )
    
    fclose( fl );
    
-   return 0;
+   convert_vnum_exits( );
+   
+   return check_map( );
 }
 
 
@@ -4513,6 +4517,14 @@ void i_mapper_mxp_enabled( )
 
 
 
+void mapper_start( )
+{
+   null_room_type = add_room_type( "Unknown", get_color( "red" ) );
+   add_room_type( "Undefined", get_color( "bright-red" ) );
+}
+
+
+
 void i_mapper_module_init_data( )
 {
    struct stat map, mapbin, mapper;
@@ -4520,10 +4532,7 @@ void i_mapper_module_init_data( )
    
    DEBUG( "i_mapper_init_data" );
    
-   null_room_type = add_room_type( "Unknown", get_color( "red" ) );
-   add_room_type( "Undefined", get_color( "bright-red" ) );
-   
-   destroy_map( );
+   mapper_start( );
    
    /* Check if we have a binary map that is newer than the map and mapper. */
    
@@ -4546,8 +4555,6 @@ void i_mapper_module_init_data( )
         return;
      }
    
-   convert_vnum_exits( );
-   check_map( );
    debugf( "%sIMap loaded. (%d microseconds)",
            binary ? "Binary " : "", get_timer( ) );
    
@@ -6423,10 +6430,6 @@ void do_map_load( char *arg )
      {
         sprintf( buf, "Map loaded. (%d microseconds)", get_timer( ) );
         clientfr( buf );
-        convert_vnum_exits( );
-        sprintf( buf, "Vnum exits converted. (%d microseconds)", get_timer( ) );
-        clientfr( buf );
-        check_map( );
         load_settings( "config.mapper.txt" );
         
         mode = GET_UNLOST;

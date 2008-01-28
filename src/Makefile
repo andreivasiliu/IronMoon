@@ -3,7 +3,7 @@
 # Small and ugly, for now.
 
 # Modules to be built in:
-OBJ = obj/main.o obj/i_mapper.o obj/i_lua.o
+OBJ = obj/main.o obj/i_mapper.o obj/i_lua.o obj/im_merger.o
 BIN = ironmoon
 
 # Dependecies:

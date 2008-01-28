@@ -78,6 +78,10 @@ ENTRANCE( i_lua_module_register )
 
 void i_lua_init_data( )
 {
+   void merger_init( );
+   
+   merger_init( );
+   
    read_ilua_config( "config.ilua.txt", NULL );
 }
 
@@ -255,6 +259,11 @@ void read_ilua_config( char *file_name, char *mod_name )
              luaL_openlibs( L );
              ilua_open_mbapi( L );
              ilua_open_mbcolours( L );
+             /* From im_merger.c */
+               {
+                  void merger_open_api( lua_State *L );
+                  merger_open_api( L );
+               }
              
              if ( mod->work_dir )
                chdir( current_work_dir );
@@ -511,6 +520,7 @@ int ilua_callback( lua_State *L, char *func, char *arg, char *dir )
 
 void i_lua_unload( )
 {
+   void merger_unload( );
    ILUA_MOD *m;
    
    for ( m = ilua_modules; m; m = m->next )
@@ -518,6 +528,8 @@ void i_lua_unload( )
         ilua_callback( m->L, "unload", NULL, m->work_dir );
         lua_close( m->L );
      }
+   
+   merger_unload( );
 }
 
 
@@ -543,6 +555,7 @@ void i_lua_process_server_paragraph( LINES *l )
 
 int i_lua_process_client_aliases( char *cmd )
 {
+   int merger_client_input( char *cmd );
    int i = 0;
    ILUA_MOD *m;
    
@@ -551,7 +564,7 @@ int i_lua_process_client_aliases( char *cmd )
         i |= ilua_callback( m->L, "client_aliases", cmd, m->work_dir );
      }
    
-   return i;
+   return i || merger_client_input( cmd );
 }
 
 
@@ -617,18 +630,24 @@ int i_lua_process_client_command( char *cmd )
           }
         
         for ( mod = ilua_modules; mod; mod = mod->next )
-          if ( !strcmp( mod->name, buf ) )
-            break;
+          if ( !strcmp( buf, "all" ) || !strcmp( mod->name, buf ) )
+            {
+               clientff( C_R "[Unloading current '%s' module.]\r\n" C_0,
+                         mod->name );
+               ilua_callback( mod->L, "unload", NULL, mod->work_dir );
+               close_ilua_module( mod );
+            }
         
-        if ( mod )
+        if ( !strcmp( buf, "all" ) )
           {
-             clientff( C_R "[Unloading current module.]\r\n" C_0 );
-             ilua_callback( mod->L, "unload", NULL, mod->work_dir );
-             close_ilua_module( mod );
+             clientff( C_R "[Loading all modules]\r\n" C_0 );
+             read_ilua_config( "config.ilua.txt", NULL );
           }
-        
-        clientff( C_R "[Loading '%s'.]\r\n" C_0, buf );
-        read_ilua_config( "config.ilua.txt", buf );
+        else
+          {
+             clientff( C_R "[Loading '%s'.]\r\n" C_0, buf );
+             read_ilua_config( "config.ilua.txt", buf );
+          }
      }
    else
      {

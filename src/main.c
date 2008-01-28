@@ -121,8 +121,8 @@ main_loop
 # endif
 #endif
 
-int main_version_major = 2;
-int main_version_minor = 6;
+int main_version_major = 3;
+int main_version_minor = 0;
 
 
 
@@ -285,9 +285,6 @@ MODULE built_in_modules[] =
 {
    /* ILua */
      { "ILua", i_lua_module_register, NULL },
-   
-   /* IMapper */
-     { "IMapper", i_mapper_module_register, NULL },
    
    /* Imperian healing system. */
 //     { "Imperian", imperian_module_register, NULL },
@@ -635,7 +632,7 @@ void generate_config( char *file_name )
 	return;
      }
    
-   fprintf( fl, "# MudBot configuration file.\n"
+   fprintf( fl, "# IronMoon configuration file.\n"
 	    "# Uncomment (i.e. remove the '#' before) anything you want to be parsed.\n"
 	    "# If there's something you don't understand here, just leave it as it is.\n\n" );
    
@@ -648,7 +645,7 @@ void generate_config( char *file_name )
 	    "allow_foreign_connections \"yes\"\n\n"
 	    "#listen_on \"1523\"\n\n\n" );
    
-   fprintf( fl, "# If these are commented or left empty, MudBot will ask the user where to connect.\n\n"
+   fprintf( fl, "# If these are commented or left empty, IronMoon will ask the user where to connect.\n\n"
 	    "host \"imperian.com\"\n"
 	    "port \"23\"\n\n\n" );
    
@@ -663,7 +660,7 @@ void generate_config( char *file_name )
 	    "pass \"\"\n\n\n" );
    
    fprintf( fl, "# Name to use on ATCP authentication. To disable ATCP use \"none\".\n"
-	    "# To login as \"MudBot <actual version>\" use \"default\" or leave it empty.\n\n"
+	    "# To login as \"IronMoon <actual version>\" use \"default\" or leave it empty.\n\n"
 	    "atcp_login_as \"default\"\n"
 	    "#atcp_login_as \"Nexus 3.0.1\"\n"
 	    "#atcp_login_as \"JavaClient 2.4.8\"\n\n\n" );
@@ -1019,6 +1016,15 @@ void modules_register( )
 {
    MODULE *mod;
    
+     {
+        int read_config2( const char *section, const char *file );
+        void save_config( const char *section, const char *file );
+        read_config2( "config", "newconfig.txt" );
+        read_config2( "config", "newconfig.txt" );
+        
+        save_config( "config", "newerconfig.txt" );
+     }
+   
    generate_config( "config.txt" );
    
    read_config( "config.txt", 0 );
@@ -1059,8 +1065,8 @@ void module_show_version( )
    
    /* Copyright notices. */
    
-   clientff( C_B "MudBot v" C_G "%d" C_B "." C_G "%d" C_B "%s - Copyright (C) 2004, 2005  Andrei Vasiliu.\r\n\r\n"
-	     "MudBot comes with ABSOLUTELY NO WARRANTY. This is free\r\n"
+   clientff( C_B "IronMoon v" C_G "%d" C_B "." C_G "%d" C_B "%s - Copyright (C) 2004, 2005  Andrei Vasiliu.\r\n\r\n"
+	     "IronMoon comes with ABSOLUTELY NO WARRANTY. This is free\r\n"
 	     "software, and you are welcome to redistribute it under\r\n"
 	     "certain conditions; See the GNU General Public License\r\n"
 	     "for more details.\r\n\r\n",
@@ -1086,7 +1092,7 @@ void module_show_id( )
    MODULE *module;
    
    clientfb( "Source Identification" );
-   clientf( "\r\n" C_D "(" C_B "MudBot:" C_D ")\r\n" C_W );
+   clientf( "\r\n" C_D "(" C_B "IronMoon:" C_D ")\r\n" C_W );
    clientf( main_id );
 #if defined( FOR_WINDOWS )
    clientf( winmain_id );
@@ -2856,7 +2862,7 @@ void handle_atcp( char *msg )
 	     if ( body )
 	       {
 		  if ( !atcp_login_as[0] || !strcmp( atcp_login_as, "default" ) )
-		    sprintf( atcp_login_as, "MudBot %d.%d", main_version_major, main_version_minor );
+		    sprintf( atcp_login_as, "IronMoon %d.%d", main_version_major, main_version_minor );
 		  
 		  sprintf( buf, "%s" "auth %d %s" "%s",
 			   sb_atcp, atcp_authfunc( body ),
@@ -3505,7 +3511,7 @@ void process_client_line( char *buf )
 	  }
 	else if ( !strcmp( buf, "`help" ) )
 	  {
-	     clientff( C_B "[" C_R "MudBot v" C_G "%d" C_R "." C_G "%d"
+	     clientff( C_B "[" C_R "IronMoon v" C_G "%d" C_R "." C_G "%d"
 		       C_R " Help" C_B "]\r\n" C_0,
 		       main_version_major, main_version_minor );
 	     clientfb( "Commands:" );
@@ -3532,7 +3538,7 @@ void process_client_line( char *buf )
 		      " `log        - Toggle logging into the log.txt file.\r\n"
 		      " `quit       - Ends the program, for good.\r\n" C_0 );
 	     clientfb( "Rebooting or crashing will keep the connection alive." );
-	     clientfb( "Everything in blue brackets belongs to the MudBot engine." );
+	     clientfb( "Everything in blue brackets belongs to the IronMoon engine." );
 	     clientfb( "Things in red brackets are module specific." );
 	  }
 	else
@@ -3787,7 +3793,7 @@ int analyse_telnetsequence( char *ts, int bytes )
 	debugf( "atcp: Sent IAC DO ATCP." );
 	
 	if ( !atcp_login_as[0] || !strcmp( atcp_login_as, "default" ) )
-	  sprintf( atcp_login_as, "MudBot %d.%d", main_version_major, main_version_minor );
+	  sprintf( atcp_login_as, "IronMoon %d.%d", main_version_major, main_version_minor );
 	
 	sprintf( buf, "%s" "hello %s\nauth 1\ncomposer 1\nchar_name 1\nchar_vitals 1\nroom_brief 0\nroom_exits 0" "%s",
 		 sb_atcp, atcp_login_as, iac_se );
@@ -5156,4 +5162,545 @@ int cmp( char *trigger, char *string )
    return 0;
 }
 
+
+
+/* Configuration system. */
+
+typedef struct config_element_data CONFIG_ELEMENT;
+
+struct config_element_data
+{
+   char *key;
+   
+   char *value;
+   
+   int is_list;
+   CONFIG_ELEMENT *first;
+   CONFIG_ELEMENT *last;
+   
+   char *description;
+   
+   CONFIG_ELEMENT *next;
+};
+
+
+CONFIG_ELEMENT *global_config;
+
+
+/* Loads it all into memory. Easier to do look-aheads this way. */
+char *load_file( const char *file )
+{
+   FILE *fl;
+   char *contents = NULL;
+   int contents_length = 0;
+   int bytes;
+   
+   fl = fopen( file, "r" );
+   if ( !fl )
+     return NULL;
+   
+   while ( 1 )
+     {
+        contents = realloc( contents, contents_length + 4096 );
+        
+        bytes = fread( contents + contents_length, 1, 4096, fl );
+        
+        contents_length += bytes;
+        
+        if ( bytes < 4096 )
+          break;
+     }
+   
+   contents[contents_length] = 0;
+   
+   return contents;
+}
+
+
+
+void destroy_config_list( CONFIG_ELEMENT *first )
+{
+   CONFIG_ELEMENT *l, *l_next;
+   
+   for ( l = first; l; l = l_next )
+     {
+        l_next = l->next;
+        
+        if ( l->is_list )
+          destroy_config_list( l->first );
+        else
+          free( l->value );
+        
+        if ( l->key )
+          free( l->key );
+        
+        free( l );
+     }
+}
+
+
+CONFIG_ELEMENT *new_config_element( char *key, CONFIG_ELEMENT *list )
+{
+   CONFIG_ELEMENT *element = NULL;
+   
+   if ( key )
+     for ( element = list->first; element; element = element->next )
+       if ( !strcmp( element->key, key ) )
+         break;
+   
+   if ( element )
+     {
+        free( key );
+        
+        if ( element->is_list )
+          {
+             destroy_config_list( element->first );
+             element->first = element->last = NULL;
+          }
+        else
+          {
+             free( element->value );
+             element->value = NULL;
+          }
+        
+        element->key = key;
+     }
+   else
+     {
+        element = calloc( 1, sizeof( CONFIG_ELEMENT ) );
+        
+        element->key = key;
+        element->next = NULL;
+        
+        if ( !list->last )
+          list->first = list->last = element;
+        else
+          {
+             list->last->next = element;
+             list->last = element;
+          }
+     }
+   
+   return element;
+}
+
+
+
+void set_config_value( char *key, char *value, CONFIG_ELEMENT *list,
+                       char *description )
+{
+   CONFIG_ELEMENT *element = NULL;
+   
+   element = new_config_element( key, list );
+   
+   element->is_list = 0;
+   element->value = value;
+   
+   if ( element->description )
+     free( element->description );
+   element->description = description;
+}
+
+
+CONFIG_ELEMENT *set_config_list( char *key, CONFIG_ELEMENT *list,
+                                 char *description )
+{
+   CONFIG_ELEMENT *element;
+   
+   element = new_config_element( key, list );
+   
+   element->is_list = 1;
+   
+   if ( element->description )
+     free( element->description );
+   element->description = description;
+   
+   return element;
+}
+
+
+char *read_config_description( char **config, int two )
+{
+   char *p, *v, *value;
+   int length = 0;
+   
+   /* First pass; find its length. */
+   p = *config;
+   while ( ( !two && *p == '#' ) ||
+           ( two && *p == '#' && *(p+1) == '#' ) )
+     {
+        p++;
+        if ( two )
+          p++;
+        if ( *p == ' ' )
+          p++;
+        
+        while ( *p != '\r' && *p != '\n' )
+          {
+             p++;
+             length++;
+          }
+        
+        while ( *p == '\r' || *p == '\n' )
+          p++;
+        
+        // For the newline.
+        length++;
+        
+        while ( *p == ' ' || *p == '\t' )
+          p++;
+     }
+   
+   /* Second pass; store it. */
+   value = malloc( length + 1 );
+   v = value;
+   p = *config;
+   
+   while ( ( !two && *p == '#' ) ||
+           ( two && *p == '#' && *(p+1) == '#' ) )
+     {
+        p++;
+        if ( two )
+          p++;
+        if ( *p == ' ' )
+          p++;
+        
+        while ( *p != '\r' && *p != '\n' )
+          {
+             *(v++) = *(p++);
+          }
+        
+        while ( *p == '\r' || *p == '\n' )
+          p++;
+        
+        // For the newline.
+        *(v++) = '\n';
+        
+        while ( *p == ' ' || *p == '\t' )
+          p++;
+     }
+   
+   *v = 0;
+   *config = p;
+   
+   return value;
+}
+
+
+char *read_config_value( char **config )
+{
+   char end_char = 0;
+   char *p, *value, *v;
+   int length = 0;
+   
+   if ( **config == '\"' || **config == '\'' )
+     {
+        end_char = **config;
+        (*config)++;
+     }
+   
+   /* Make one pass over it, to find its length. */
+   p = *config;
+   while ( *p )
+     {
+        if ( end_char )
+          {
+             if ( *p == end_char )
+               break;
+          }
+        else if ( isspace( *p ) || *p == '=' || *p == ',' )
+          break;
+        
+        if ( *p == '\\' )
+          {
+             p++;
+             if ( !*p )
+               break;
+          }
+        
+        length++;
+        p++;
+     }
+   
+   value = malloc( length + 1 );
+   v = value;
+   
+   /* Make another pass and copy into 'value'. */
+   p = *config;
+   while ( *p )
+     {
+        if ( end_char )
+          {
+             if ( *p == end_char )
+               break;
+          }
+        else if ( isspace( *p ) )
+          break;
+        
+        if ( *p == '\\' )
+          {
+             p++;
+             if ( !*p )
+               break;
+          }
+        
+        *(v++) = *(p++);
+     }
+   
+   *v = 0;
+   *config = p;
+   
+   return value;
+}
+
+
+void read_config_list( char **config, CONFIG_ELEMENT *list )
+{
+   CONFIG_ELEMENT *list2;
+   char *word1, *word2, *description;
+   
+   while ( 1 )
+     {
+        /* Skip whitespace. */
+        while ( isspace( **config ) )
+          (*config)++;
+        
+        if ( **config == '#' )
+          {
+             description = read_config_description( config, 0 );
+             
+             while ( isspace( **config ) )
+               (*config)++;
+          }
+        else
+          description = NULL;
+        
+        if ( !**config )
+          break;
+        
+        if ( **config == '}' )
+          break;
+        
+        if ( **config == '=' || **config == ',' )
+          {
+             debugf( "Buggy config file, while reading for the '%s' list!",
+                     list->key );
+             return;
+          }
+        
+        word1 = NULL;
+        
+        if ( **config != '{' )
+          {
+             word1 = read_config_value( config );
+             
+             /* Skip whitespace. */
+             while ( isspace( **config ) )
+               (*config)++;
+             
+             if ( **config != '=' )
+               {
+                  set_config_value( NULL, word1, list, description );
+                  continue;
+               }
+             
+             (*config)++;
+          }
+        
+        while ( isspace( **config ) )
+          (*config)++;
+        
+        if ( **config != '{' )
+          {
+             while ( isspace( **config ) )
+               (*config)++;
+             
+             word2 = read_config_value( config );
+             
+             set_config_value( word1, word2, list, description );
+          }
+        else
+          {
+             (*config)++;
+             
+             list2 = set_config_list( word1, list, description );
+             
+             read_config_list( config, list2 );
+             
+             if ( **config != '}' )
+               {
+                  debugf( "Buggy config file, expect '}' while reading for "
+                          "the '%s' list!", list2->key );
+                  return;
+               }
+             (*config)++;
+          }
+     }
+}
+
+
+
+int read_config2( const char *section, const char *file )
+{
+   CONFIG_ELEMENT *elem;
+   char *config, *p;
+   
+   /* Must be valid, or else we might attempt to load section "". */
+   if ( !section || !section[0] )
+     return 1;
+   
+   config = load_file( file );
+   if ( !config )
+     return 1;
+   
+   for ( elem = global_config; elem; elem = elem->next )
+     if ( !strcmp( section, elem->key ) )
+       break;
+   
+   /* Doesn't exist? Create a new one. */
+   if ( !elem )
+     {
+        elem = calloc( 1, sizeof( CONFIG_ELEMENT ) );
+        
+        elem->key = strdup( section );
+        elem->is_list = 1;
+        
+        elem->next = global_config;
+        global_config = elem;
+     }
+   
+   p = config;
+   read_config_list( &p, elem );
+   
+   free( config );
+   
+   return 0;
+}
+
+
+void save_config_description( FILE *fl, char *desc, int indent, int two )
+{
+   int i;
+   
+   for ( i = 0; i < indent; i++ )
+     fprintf( fl, " " );
+   
+   if ( two )
+     fprintf( fl, "#" );
+   fprintf( fl, "# Description\n" );
+}
+
+
+void save_config_value( FILE *fl, char *value )
+{
+   fprintf( fl, "'%s'", value );
+   
+   
+}
+
+
+void save_config_list( FILE *fl, CONFIG_ELEMENT *first, int indent )
+{
+   CONFIG_ELEMENT *elem;
+   int style = 0;
+   int i;
+   
+   /* First pass; figure out the style to use.
+    * style == 1  =>  one element per line
+    * style == 0  =>  all element on one line, comma separated
+    */
+   for ( elem = first; elem; elem = elem->next )
+     if ( elem->description ||
+          elem->is_list )
+       {
+          style = 1;
+          break;
+       }
+   
+   if ( style == 1 )
+     {
+        fprintf( fl, "\n" );
+        
+        for ( elem = first; elem; elem = elem->next )
+          {
+             if ( elem->description )
+               save_config_description( fl, elem->description, indent, 0 );
+             
+             for ( i = 0; i < indent; i++ )
+               fprintf( fl, " " );
+             
+             if ( elem->key )
+               {
+                  save_config_value( fl, elem->key );
+                  fprintf( fl, " = " );
+               }
+             
+             if ( elem->is_list )
+               {
+                  fprintf( fl, "{" );
+                  save_config_list( fl, elem->first, indent + 2 );
+                  
+                  for ( i = 0; i < indent; i++ )
+                    fprintf( fl, " " );
+                  
+                  fprintf( fl, "}" );
+               }
+             else
+               save_config_value( fl, elem->value );
+             
+             fprintf( fl, "\n" );
+             if ( elem->description )
+               fprintf( fl, "\n" );
+             if ( elem->next )
+               fprintf( fl, "\n" );
+          }
+     }
+   else
+     {
+        for ( elem = first; elem; elem = elem->next )
+          {
+             fprintf( fl, " " );
+             
+             if ( elem->key )
+               {
+                  save_config_value( fl, elem->key );
+                  fprintf( fl, "=" );
+               }
+             
+             save_config_value( fl, elem->value );
+             
+             if ( elem->next )
+               fprintf( fl, "," );
+          }
+        fprintf( fl, " " );
+     }
+}
+
+
+void save_config( const char *section, const char *file )
+{
+   CONFIG_ELEMENT *elem;
+   FILE *fl;
+   
+   for ( elem = global_config; elem; elem = elem->next )
+     if ( !strcmp( section, elem->key ) )
+       break;
+   
+   /* Is it worth saving something that doesn't exist? */
+   if ( !elem )
+     return;
+   
+   fl = fopen( file, "w" );
+   if ( !fl )
+     return;
+   
+   if ( elem->description )
+     save_config_description( fl, elem->description, 0, 1 );
+   
+   fprintf( fl, "\n\n\n" );
+   
+   save_config_list( fl, elem->first, 0 );
+   
+   fclose( fl );
+}
 

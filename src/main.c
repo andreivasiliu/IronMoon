@@ -1020,7 +1020,7 @@ void modules_register( )
         int read_config2( const char *section, const char *file );
         void save_config( const char *section, const char *file );
         read_config2( "config", "newconfig.txt" );
-        read_config2( "config", "newconfig.txt" );
+        //read_config2( "config", "newconfig.txt" );
         
         save_config( "config", "newerconfig.txt" );
      }
@@ -5245,7 +5245,7 @@ CONFIG_ELEMENT *new_config_element( char *key, CONFIG_ELEMENT *list )
    
    if ( key )
      for ( element = list->first; element; element = element->next )
-       if ( !strcmp( element->key, key ) )
+       if ( element->key && !strcmp( element->key, key ) )
          break;
    
    if ( element )
@@ -5434,7 +5434,7 @@ char *read_config_value( char **config )
              if ( *p == end_char )
                break;
           }
-        else if ( isspace( *p ) )
+        else if ( isspace( *p ) || *p == '=' || *p == ',' )
           break;
         
         if ( *p == '\\' )
@@ -5639,10 +5639,6 @@ void save_config_list( FILE *fl, CONFIG_ELEMENT *first, int indent )
                {
                   fprintf( fl, "{" );
                   save_config_list( fl, elem->first, indent + 2 );
-                  
-                  for ( i = 0; i < indent; i++ )
-                    fprintf( fl, " " );
-                  
                   fprintf( fl, "}" );
                }
              else
@@ -5654,6 +5650,9 @@ void save_config_list( FILE *fl, CONFIG_ELEMENT *first, int indent )
              if ( elem->next )
                fprintf( fl, "\n" );
           }
+        
+        for ( i = 0; i < indent - 2; i++ )
+          fprintf( fl, " " );
      }
    else
      {

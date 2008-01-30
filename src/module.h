@@ -24,10 +24,6 @@
 
 /* Module header file, to be used with all module source files. */
 
-#if defined( FOR_WINDOWS )
-# define BUILDING_DLL
-#endif
-
 
 #include "header.h"
 
@@ -85,11 +81,22 @@ void del_timer( const char *name );
 
 /* Networking */
 DESCRIPTOR *get_descriptors( );
-int mb_connect( char *hostname, int port );
+int mb_connect( const char *hostname, int port );
 char *get_connect_error( );
 void add_descriptor( DESCRIPTOR *desc );
 void remove_descriptor( DESCRIPTOR *desc );
 int c_read( int fd, void *buf, size_t count );
 int c_write( int fd, const void *buf, size_t count );
 int c_close( int fd );
+
+/* Config */
+CONFIG_ELEMENT *config_getlist( char *varpath );
+const char *config_getvalue( char *varpath );
+void config_delitem( char *varpath );
+void config_setdescription( char *varpath, char *description );
+void config_setvalue( char *varpath, char *value );
+void config_addvalue( char *varpath, char *value );
+void config_setlist( char *varpath );
+int read_config( const char *section, const char *file );
+void save_config( const char *section, const char *file );
 

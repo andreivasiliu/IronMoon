@@ -1,6 +1,6 @@
 -- Imperian driver.
 
-map_file = '../IMap'
+map_file = 'IMap'
 title_color = C.m
 
 

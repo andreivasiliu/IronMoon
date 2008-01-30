@@ -37,3 +37,23 @@ END
 
 A ICON MOVEABLE PURE LOADONCALL DISCARDABLE "mb-core.ico"
 
+/*
+FILETYPE VFT_APP
+{
+  BLOCK "StringFileInfo"
+     {
+        BLOCK "040904E4"
+          {
+//               VALUE "FileVersion", ""
+               VALUE "FileDescription", "Core Executable"
+               VALUE "InternalName", "IronMoon.exe"
+               VALUE "LegalCopyright", "GNU GPL"
+//               VALUE "LegalTrademarks", ""
+               VALUE "OriginalFilename", "IronMoon.exe"
+               VALUE "ProductName", "Iron Moon"
+//               VALUE "ProductVersion", ""
+          }
+     }
+}
+
+*/

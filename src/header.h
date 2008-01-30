@@ -102,6 +102,8 @@ typedef struct descriptor_data DESCRIPTOR;
 typedef struct timer_data TIMER;
 typedef struct line_data LINE;
 typedef struct lines_data LINES;
+typedef struct config_element_data CONFIG_ELEMENT;
+
 
 /* Module information structure. */
 struct module_data
@@ -247,5 +249,20 @@ struct lines_data
 	char *append_line;
      } *line_info;
    
+};
+
+struct config_element_data
+{
+   char *key;
+   
+   char *value;
+   
+   int is_list;
+   CONFIG_ELEMENT *first;
+   CONFIG_ELEMENT *last;
+   
+   char *description;
+   
+   CONFIG_ELEMENT *next;
 };
 

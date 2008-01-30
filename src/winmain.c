@@ -186,7 +186,8 @@ void win_sig_segv_handler( int sig )
 
 int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd )
 {
-   void mudbot_init( int port );
+   int mudbot_init( );
+   int val;
    
    MSG msg;
    
@@ -218,13 +219,32 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i
    
    ShowWindow( hwndMain, nShowCmd );
    
-   mudbot_init( 123 );
+   val = mudbot_init( );
+   
+   if ( val == 2 )
+     {
+        MessageBox( hwndMain,
+                    "No configuration file found, generating one.\n"
+                    "Look over 'config.txt' and see if it's correct, then start me again.",
+                    "IronMoon", MB_ICONINFORMATION );
+        return 0;
+     }
+   
+   if ( val == 1 )
+     {
+        MessageBox( hwndMain,
+                    "Buggy config.txt file. Try to fix it, and if you can't, delete it.",
+                    "IronMoon", MB_ICONSTOP );
+        return 0;
+     }
    
    UpdateTimer( );
    
    if ( !control )
      {
-	MessageBox( NULL, "At least one port to listen on must be defined!", "IronMoon Warning", 0 );
+	MessageBox( hwndMain,
+                    "At least one port to listen on must be defined!",
+                    "IronMoon Warning", 0 );
      }
    
    signal( SIGSEGV, win_sig_segv_handler );

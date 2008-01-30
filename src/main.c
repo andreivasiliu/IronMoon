@@ -189,9 +189,9 @@ static LINES *current_paragraph;
 LINES *global_l;
 int current_line_in_paragraph;
 
-char exec_file[1024];
+CONFIG_ELEMENT *global_config;
 
-int default_listen_port = 123;
+char exec_file[1024];
 
 int copyover;
 
@@ -207,6 +207,10 @@ char *desc_name;
 char *desc_section;
 char *crash_buffer;
 int crash_buffer_len;
+
+/* Cache from config.txt */
+int strip_telnet_ga;
+char atcp_login_as[256];
 
 /* Misc. */
 char buffer_noclient[65536];
@@ -224,7 +228,6 @@ char *buffer_write_error;
 char *initial_big_buffer;
 int bw_end_offset;
 int bind_to_localhost;
-int disable_mccp;
 int verbose_mccp;
 int mxp_enabled;
 int clientf_modifies_suffix;
@@ -243,19 +246,6 @@ char *log_file = "log.txt";
 
 char server_hostname[1024];
 char client_hostname[1024];
-
-/* Options from config.txt */
-char default_host[512];
-int default_port;
-char *proxy_host;
-int proxy_port;
-char proxy_type[512];
-int default_port;
-char atcp_login_as[512];
-char default_user[512];
-char default_pass[512];
-int default_mxp_mode = 7;
-int strip_telnet_ga;
 
 /* ATCP. */
 int a_hp, a_mana, a_end, a_will, a_exp;
@@ -614,6 +604,7 @@ void write_mod( char *file_name, char *type, FILE *fl )
 
 
 
+#if 0
 void generate_config( char *file_name )
 {
    FILE *fl;
@@ -699,9 +690,12 @@ void generate_config( char *file_name )
    
    fclose( fl );
 }
+#endif
 
 
 
+
+#if 0
 void read_config( char *file_name, int silent )
 {
    FILE *fl;
@@ -865,7 +859,7 @@ void read_config( char *file_name, int silent )
    
    update_modules( );
 }
-
+#endif
 
 void load_builtin_modules( )
 {
@@ -1016,18 +1010,6 @@ void modules_register( )
 {
    MODULE *mod;
    
-     {
-        int read_config2( const char *section, const char *file );
-        void save_config( const char *section, const char *file );
-        read_config2( "config", "newconfig.txt" );
-        //read_config2( "config", "newconfig.txt" );
-        
-        save_config( "config", "newerconfig.txt" );
-     }
-   
-   generate_config( "config.txt" );
-   
-   read_config( "config.txt", 0 );
    load_builtin_modules( );
    
    DEBUG( "modules_register" );
@@ -1196,88 +1178,6 @@ void restart_mccp( TIMER *self )
 
 
 
-void module_process_server_line( LINE *line )
-{
-   char mccp_stop[] = { IAC, DONT, TELOPT_COMPRESS2, 0 };
-   MODULE *module;
-   
-   DEBUG( "module_process_server_line" );
-   
-   current_line = line;
-   clientf_modifies_suffix = 1;
-   
-   /* Our own triggers, to start/stop MCCP when needed. */
-   if ( compressed &&
-	( !cmp( "you are out of the land.", line->line ) ) )
-     {
-	add_timer( "restart_mccp", 20, restart_mccp, 0, 0, 0 );
-	send_to_server( mccp_stop );
-     }
-   if ( !compressed && !disable_mccp &&
-	( !cmp( "You cease your praying.", line->line ) ) )
-     {
-	del_timer( "restart_mccp" );
-	restart_mccp( NULL );
-     }
-#if defined( FOR_WINDOWS )
-   if ( compressed &&
-	( !cmp( "You enter the editor.", line->line ) ||
-	  !cmp( "You begin writing.", line->line ) ) )
-     {
-	char mccp_start[] = { IAC, DO, TELOPT_COMPRESS2, 0 };
-	
-	/* Only briefly, ATCP over MCCP is very buggy. */
-	verbose_mccp = 0;
-	debugf( "Temporarely stopping MCCP." );
-	send_to_server( mccp_stop );
-	send_to_server( mccp_start );
-     }
-#endif
-   
-   mod_section = "Processing server line";
-   for ( module = modules; module; module = module->next )
-     {
-	current_mod = module;
-	if ( module->process_server_line )
-	  (module->process_server_line)( line );
-     }
-   mod_section = NULL;
-   
-   clientf_modifies_suffix = 0;
-}
-
-
-
-void module_process_server_prompt( LINE *line )
-{
-   MODULE *module;
-   
-   DEBUG( "module_process_server_prompt" );
-   
-   current_line = line;
-   clientf_modifies_suffix = 1;
-   
-   /* It won't print that echo_off, so I'll force it. */
-   if ( strstr( line->line, "password" ) )
-     {
-	char telnet_echo_off[ ] = { IAC, WILL, TELOPT_ECHO, '\0' };
-	clientf( telnet_echo_off );
-     }
-   
-   mod_section = "Processing server prompt";
-   for ( module = modules; module; module = module->next )
-     {
-	current_mod = module;
-	if ( module->process_server_prompt )
-	  (module->process_server_prompt)( line );
-     }
-   mod_section = NULL;
-   
-   clientf_modifies_suffix = 0;
-}
-
-
-
 void module_process_server_paragraph( LINES *l )
 {
    char mccp_stop[] = { IAC, DONT, TELOPT_COMPRESS2, 0 };
@@ -1298,11 +1198,16 @@ void module_process_server_paragraph( LINES *l )
 	     add_timer( "restart_mccp", 20, restart_mccp, 0, 0, 0 );
 	     send_to_server( mccp_stop );
 	  }
-	if ( !compressed && !disable_mccp &&
-	     ( !cmp( "You cease your praying.", l->line[i] ) ) )
+	if ( !compressed &&
+	     !cmp( "You cease your praying.", l->line[i] ) )
 	  {
-	     del_timer( "restart_mccp" );
-	     restart_mccp( NULL );
+             const char *enable_mccp;
+             enable_mccp = config_getvalue( "config.advanced.enable_mccp" );
+             if ( enable_mccp && !strcmp( enable_mccp, "yes" ) )
+               {
+                  del_timer( "restart_mccp" );
+                  restart_mccp( NULL );
+               }
 	  }
 #if defined( FOR_WINDOWS )
 	if ( compressed &&
@@ -1698,18 +1603,12 @@ char *get_connect_error( )
  *  -4: Unable to connect.
  */
 
-int mb_connect( char *hostname, int port )
+int mb_connect( const char *hostname, int port )
 {
    struct hostent *host;
    struct in_addr hostip;
    struct sockaddr_in saddr;
    int i, sock;
-   
-   if ( !hostname && !port )
-     {
-	hostname = proxy_host;
-	port = proxy_port;
-     }
    
    if ( hostname[0] == '\0' || port < 1 || port > 65535 )
      {
@@ -1797,13 +1696,18 @@ char *socks5_msgs( int type, unsigned char msg )
 
 
 
-int mb_connect_request( int sock, char *hostname, int port )
+int mb_connect_request( int sock, const char *hostname, int port )
 {
+   const char *proxy_type;
    char string[1024];
    int len;
    
    if ( sock < 0 )
      return sock;
+   
+   proxy_type = config_getvalue( "config.advanced.proxy.type" );
+   if ( !proxy_type )
+     return -1;
    
    if ( !strcmp( proxy_type, "socks5" ) )
      {
@@ -2041,6 +1945,23 @@ void check_for_server( void )
 
 
 
+int default_mxp_mode( )
+{
+   const char *mode;
+   
+   mode = config_getvalue( "config.advanced.default_mxp_mode" );
+   
+   if ( !mode || !strcmp( mode, "locked" ) )
+     return 7;
+   else if ( !strcmp( mode, "secure" ) )
+     return 6;
+   else if( !strcmp( mode, "open" ) )
+     return 5;
+   else
+     return 0;
+}
+
+
 void fd_client_in( DESCRIPTOR *self )
 {
    int process_client( void );
@@ -2062,7 +1983,7 @@ void fd_client_out( DESCRIPTOR *self )
    char will_mxp[] = { IAC, WILL, TELOPT_MXP, 0 };
    
    mxp_enabled = 0;
-   if ( default_mxp_mode )
+   if ( default_mxp_mode( ) )
      clientf( will_mxp );
    
    self->callback_out = NULL;
@@ -2158,39 +2079,56 @@ void new_descriptor( int control )
      }
    else if ( !server )
      {
+        const char *default_host, *default_port;
+        const char *proxy_host, *proxy_port, *proxy_type;
+        
 	strcpy( client_hostname, from ? from->h_name : buf );
 	
 	assign_client( desc );
 	
 	module_show_version( );
 	
-	if ( default_port && default_host[0] )
+        default_host = config_getvalue( "config.server.host" );
+        default_port = config_getvalue( "config.server.port" );
+        proxy_host = config_getvalue( "config.advanced.proxy.host" );
+        proxy_port = config_getvalue( "config.advanced.proxy.port" );
+        proxy_type = config_getvalue( "config.advanced.proxy.type" );
+        
+        if ( !default_host || !default_port ||
+             !isdigit( *default_port ) )
+          default_host = NULL;
+        
+        if ( !proxy_host || !proxy_port || !proxy_type ||
+             !isdigit( *proxy_port ) );
+          proxy_type = NULL;
+        
+	if ( default_host )
 	  {
 	     int sock;
 	     
-	     if ( !proxy_host || !proxy_port )
+	     if ( !proxy_type )
 	       {
-		  debugf( "Connecting to: %s %d.", default_host, default_port );
-		  clientff( C_B "Connecting to %s:%d... " C_0, default_host, default_port );
+		  debugf( "Connecting to: %s %d.", default_host, atoi(default_port) );
+		  clientff( C_B "Connecting to %s:%d... " C_0, default_host, atoi(default_port) );
 		  
-		  sock = mb_connect( default_host, default_port );
+		  sock = mb_connect( default_host, atoi(default_port) );
 	       }
 	     else
 	       {
-		  debugf( "Connecting to: %s %d.", proxy_host, proxy_port );
-		  clientff( C_B "Connecting to %s:%d... " C_0, proxy_host, proxy_port );
+		  debugf( "Connecting to proxy: %s %d.", proxy_host, atoi(proxy_port) );
+		  clientff( C_B "Connecting to proxy %s:%d... " C_0, proxy_host, atoi(proxy_port) );
 		  
-		  sock = mb_connect( NULL, 0 );
+		  sock = mb_connect( proxy_host, atoi(proxy_port) );
 	       }
 	     
-	     if ( proxy_host && proxy_port && sock >= 0 )
+	     if ( proxy_type && sock >= 0 )
 	       {
 		  clientf( C_B "Done.\r\n" C_0 );
 		  
-		  debugf( "Asking for: %s %d.", default_host, default_port );
-		  clientff( C_B "Requesting %s:%d... " C_0, default_host, default_port );
+		  debugf( "Asking for: %s %d.", default_host, atoi(default_port) );
+		  clientff( C_B "Requesting %s:%d... " C_0, default_host, atoi(default_port) );
 		  
-		  sock = mb_connect_request( sock, default_host, default_port );
+		  sock = mb_connect_request( sock, default_host, atoi(default_port) );
 	       }
 	     
 	     if ( sock < 0 )
@@ -2839,7 +2777,7 @@ void handle_atcp( char *msg )
    
    // This might not work yet.
    
-   we_control_it = strcmp( atcp_login_as, "none" );
+   we_control_it = config_getvalue( "config.advanced.atcp_login_as" ) ? 1 : 0;
    
    body = strchr( msg, '\n' );
    
@@ -2985,8 +2923,8 @@ void client_telnet( char *buf, char *dst, int *bytes )
 		  mxp_enabled = 1;
 		  debugf( "mxp: Supported by your Client!" );
 		  
-		  if ( default_mxp_mode )
-		    mxp_tag( default_mxp_mode );
+		  if ( default_mxp_mode( ) )
+		    mxp_tag( default_mxp_mode( ) );
 		  
 		  module_mxp_enabled( );
 	       }
@@ -3080,14 +3018,13 @@ int mxp_tag( int tag )
    
    if ( tag == TAG_DEFAULT )
      {
-	if ( default_mxp_mode )
-	  tag = default_mxp_mode;
-	else
+        tag = default_mxp_mode( );
+	if ( !tag )
 	  tag = 7;
      }
    
    if ( tag == TAG_NOTHING || tag < 0 )
-     return default_mxp_mode;
+     return default_mxp_mode( );
    
    clientff( "\33[%dz", tag );
    return 1;
@@ -3103,14 +3040,13 @@ int mxp_stag( int tag, char *dest )
    
    if ( tag == TAG_DEFAULT )
      {
-	if ( default_mxp_mode )
-	  tag = default_mxp_mode;
-	else
+        tag = default_mxp_mode( );
+	if ( !tag )
 	  tag = 7;
      }
    
    if ( tag == TAG_NOTHING || tag < 0 )
-     return default_mxp_mode;
+     return default_mxp_mode( );
    
    sprintf( dest, "\33[%dz", tag );
    return 1;
@@ -3656,8 +3592,8 @@ int process_client( void )
 		  
 		  clientf( start_mxp );
 		  
-		  if ( default_mxp_mode )
-		    mxp_tag( default_mxp_mode );
+		  if ( default_mxp_mode( ) )
+		    mxp_tag( default_mxp_mode( ) );
 		  
 		  module_mxp_enabled( );
 		  continue;
@@ -3762,7 +3698,9 @@ int analyse_telnetsequence( char *ts, int bytes )
 	ts[2] == (char) TELOPT_COMPRESS2 )
      {
 #if !defined( DISABLE_MCCP )
-	if ( !disable_mccp )
+        const char *enable_mccp;
+        enable_mccp = config_getvalue( "config.advanced.enable_mccp" );
+        if ( enable_mccp && !strcmp( enable_mccp, "yes" ) )
 	  {
 	     const char do_compress2[] =
 	       { IAC, DO, TELOPT_COMPRESS2, 0 };
@@ -3781,8 +3719,9 @@ int analyse_telnetsequence( char *ts, int bytes )
    
    else if ( ts[1] == (char) WILL &&
 	     ts[2] == (char) ATCP &&
-	     strcmp( atcp_login_as, "none" ) )
+	     atcp_login_as[0] )
      {
+        const char *default_user, *default_pass;
 	char buf[256];
 	char do_atcp[] = { IAC, DO, ATCP, 0 };
 	char sb_atcp[] = { IAC, SB, ATCP, 0 };
@@ -3792,14 +3731,16 @@ int analyse_telnetsequence( char *ts, int bytes )
 	
 	debugf( "atcp: Sent IAC DO ATCP." );
 	
-	if ( !atcp_login_as[0] || !strcmp( atcp_login_as, "default" ) )
-	  sprintf( atcp_login_as, "IronMoon %d.%d", main_version_major, main_version_minor );
+	if ( !strcmp( atcp_login_as, "default" ) )
+          sprintf( atcp_login_as, "IronMoon %d.%d", main_version_major, main_version_minor );
 	
 	sprintf( buf, "%s" "hello %s\nauth 1\ncomposer 1\nchar_name 1\nchar_vitals 1\nroom_brief 0\nroom_exits 0" "%s",
 		 sb_atcp, atcp_login_as, iac_se );
 	send_to_server( buf );
 	
-	if ( default_user[0] && default_pass[0] )
+        default_user = config_getvalue( "config.advanced.autologin.user" );
+        default_pass = config_getvalue( "config.advanced.autologin.pass" );
+	if ( default_user && default_pass )
 	  {
 	     sprintf( buf, "%s" "login %s %s" "%s",
 		      sb_atcp, default_user, default_pass, iac_se );
@@ -3850,18 +3791,18 @@ void print_paragraph( LINES *l )
    int first = 1;
    char *p;
    
-   if ( buffer_size != 256 )
+   if ( buffer_size != 4096 )
      {
 	if ( output_buffer )
 	  free( output_buffer );
 	
-	output_buffer = malloc( 256 * sizeof(char*) );
-	buffer_size = 256;
+	output_buffer = malloc( 4096 );
+	buffer_size = 4096;
      }
    
 #define ADD_CHAR(ch) \
    { if ( pos == buffer_size ) \
-       output_buffer = realloc( output_buffer, ( buffer_size += 256 ) ); \
+       output_buffer = realloc( output_buffer, ( buffer_size += 1024 ) ); \
       output_buffer[pos++] = (ch); }
    
    /* First line empty? Gag it until we find a non-gagged line. */
@@ -4123,13 +4064,13 @@ void process_buffer( char *raw_buffer, int bytes )
 	/* Adjust memory size, when needed. */
 	if ( raw_pos == raw_buffer_size )
 	  {
-	     raw_buffer_size += 256;
+	     raw_buffer_size += 4096;
 	     l.raw		= realloc( l.raw,		raw_buffer_size );
 	     l.insert_point	= realloc( l.insert_point,	raw_buffer_size );
 	  }
 	if ( normal_pos == normal_buffer_size )
 	  {
-	     normal_buffer_size += 256;
+	     normal_buffer_size += 4096;
 	     l.lines 		= realloc( l.lines,
 					   normal_buffer_size );
 	     l.zeroed_lines	= realloc( l.zeroed_lines,
@@ -4141,16 +4082,16 @@ void process_buffer( char *raw_buffer, int bytes )
 	     l.gag_char		= realloc( l.gag_char,
 					   normal_buffer_size * sizeof(short));
 	     
-	     memset( l.colour + normal_buffer_size - 256, 0,
-		     256 * sizeof(char*) );
-	     memset( l.inlines + normal_buffer_size - 256, 0,
-		     256 * sizeof(char*) );
-	     memset( l.gag_char + normal_buffer_size - 256, 0,
-		     256 * sizeof(short) );
+	     memset( l.colour + normal_buffer_size - 4096, 0,
+		     4096 * sizeof(char*) );
+	     memset( l.inlines + normal_buffer_size - 4096, 0,
+		     4096 * sizeof(char*) );
+	     memset( l.gag_char + normal_buffer_size - 4096, 0,
+		     4096 * sizeof(short) );
 	  }
 	if ( l.nr_of_lines == lines_buffer_size )
 	  {
-	     lines_buffer_size += 256;
+	     lines_buffer_size += 4096;
 	     l.line		= realloc( l.line,
 					   (lines_buffer_size+2)*sizeof(char*) );
 	     l.len		= realloc( l.len,
@@ -4165,8 +4106,8 @@ void process_buffer( char *raw_buffer, int bytes )
 	     l.len[0] = l.line_start[0] = l.raw_line_start[0] = 0;
 	     l.len[1] = l.line_start[1] = l.raw_line_start[1] = 0;
 	     
-	     memset( l.line_info + lines_buffer_size - 256, 0,
-		     256 * sizeof(struct line_info_data) );
+	     memset( l.line_info + lines_buffer_size - 4096, 0,
+		     4096 * sizeof(struct line_info_data) );
 	  }
 	
 	l.raw[raw_pos] = *raw_buffer;
@@ -4581,7 +4522,7 @@ int process_server( void )
 
 
 
-int init_socket( int port )
+int init_socket( int port, int bind_to_localhost )
 {
    DESCRIPTOR *desc;
    static struct sockaddr_in sa_zero;
@@ -4755,20 +4696,136 @@ void sig_segv_handler( int sig )
 }
 
 
-
-#if defined( FOR_WINDOWS )
-
-/* Windows: mudbot_init() */
-
-void mudbot_init( int port )
+void generate_config( char *file )
 {
-   default_listen_port = port;
+   config_addvalue( "config.listen_ports", "1523" );
+   config_setdescription( "config.listen_ports",
+     "Ports to listen on, comma-separated. They can be as many as you want.\n"
+     "These will accept connections only from localhost." );
+   
+   config_setlist( "config.unsecure_listen_ports" );
+   config_setdescription( "config.unsecure_listen_ports",
+     "And these allow you to connect from another computer." );
+   
+   config_setvalue( "config.server.host", "imperian.com" );
+   config_setvalue( "config.server.port", "23" );
+   config_setdescription( "config.server", "MUD Server address" );
+   
+   config_addvalue( "config.ilua_modules.Mapper", "loader.lua" );
+   config_setvalue( "config.ilua_modules.Mapper.dir", "mapper" );
+   config_setdescription( "config.ilua_modules",
+     "ILua modules. Examples on how to set up a basic module at:\n"
+     "http://imts.sf.net/" );
+   
+   config_setlist( "config.advanced" );
+   config_setdescription( "config.advanced",
+     "Advanced. Skip these if you're not interested." );
+   
+   config_setvalue( "config.advanced.proxy.type", "none" );
+   config_setvalue( "config.advanced.proxy.host", "none" );
+   config_setvalue( "config.advanced.proxy.port", "none" );
+   config_setdescription( "config.advanced.proxy",
+     "Proxy, if relevant. It can be \"http\", \"socks5\", or \"none\"." );
+   
+   config_setvalue( "config.advanced.autologin.user", "none" );
+   config_setvalue( "config.advanced.autologin.pass", "none" );
+   config_setdescription( "config.advanced.autologin",
+     "Autologin through ATCP. Keep your password here at your own risk!" );
+   
+   config_setvalue( "config.advanced.atcp_login_as", "default" );
+   config_setdescription( "config.advanced.atcp_login_as",
+     "Name to use on ATCP authentication. To disable ATCP, use \"none\".\n"
+     "To login as \"IronMoon <version>\", use \"default\".\n"
+     "Other examples: \"Nexus 3.0.1\", \"JavaClient 2.4.8\"" );
+   
+   config_setvalue( "config.advanced.enable_mccp", "yes" );
+   config_setdescription( "config.advanced.enable_mccp",
+     "MUD Client Compression Protocol." );
+   
+   config_setvalue( "config.advanced.default_mxp_mode", "open" );
+   config_setdescription( "config.advanced.default_mxp_mode",
+     "MUD eXtension Protocol. It can be \"disabled\", \"locked\", \"open\", or \"secure\".\n"
+     "Read the MXP specifications on www.zuggsoft.com for more info." );
+   
+   config_setvalue( "config.advanced.strip_telnet_ga", "no" );
+   config_setdescription( "config.advanced.strip_telnet_ga",
+     "Telnet Go-Ahead sequence. Some clients can't live with it, some can't without it." );
+   
+   config_setdescription( "config",
+     "IronMoon configuration file.\n"
+     " \n"
+     "If there's something you don't understand here, just leave it as it is." );
+   
+   save_config( "config", file );
+}
+
+
+int ironmoon_init( )
+{
+   CONFIG_ELEMENT *elem;
+   const char *temp;
+   
+   if ( read_config( "config", "config.txt" ) )
+     return 1;
+   
+   /* This should be a list, but right now, it can't be anything other
+    * than the 'config' we just loaded. */
+   if ( !global_config )
+     {
+        generate_config( "config.txt" );
+        return 2;
+     }
+   
+   temp = config_getvalue( "config.advanced.atcp_login_as" );
+   if ( temp )
+     strcpy( atcp_login_as, temp );
+   else
+     atcp_login_as[0] = 0;
+   
+   temp = config_getvalue( "config.advanced.strip_telnet_ga" );
+   if ( temp && !strcmp( temp, "yes" ) )
+     strip_telnet_ga = 1;
+   else
+     strip_telnet_ga = 0;
+   
+   elem = config_getlist( "config.listen_ports" );
+   
+   for ( elem = elem; elem; elem = elem->next )
+     if ( !elem->is_list && isdigit( *elem->value ) )
+       {
+          debugf( "Listening on port %d, bound on localhost.", atoi( elem->value ) );
+          init_socket( atoi( elem->value ), 1 );
+       }
+   
+   elem = config_getlist( "config.unsecure_listen_ports" );
+   
+   for ( elem = elem; elem; elem = elem->next )
+     if ( !elem->is_list && isdigit( *elem->value ) )
+       {
+          debugf( "Listening on port %d.", atoi( elem->value ) );
+          init_socket( atoi( elem->value ), 0 );
+       }
+   
    
    /* Load all modules, and register them. */
    modules_register( );
    
    /* Initialize all modules. */
    module_init_data( );
+   
+   return 0;
+}
+
+
+
+#if defined( FOR_WINDOWS )
+
+/* Windows: mudbot_init() */
+
+int mudbot_init( )
+{
+   /* Read config, start listening, etc. */
+   return ironmoon_init( );
 }
 
 #else
@@ -4882,9 +4939,7 @@ int main( int argc, char **argv )
      {
 	if ( !what )
 	  {
-	     if ( !strcmp( argv[i], "-p" ) || !strcmp( argv[i], "--port" ) )
-	       what = 1;
-	     else if ( !strcmp( argv[i], "-c" ) || !strcmp( argv[i], "--copyover" ) )
+	     if ( !strcmp( argv[i], "-c" ) || !strcmp( argv[i], "--copyover" ) )
 	       what = 2, copyover = 1;
 	     else if ( !strcmp( argv[i], "-s" ) || !strcmp( argv[i], "--safemode" ) )
 	       what = 2, copyover = 2;
@@ -4895,16 +4950,7 @@ int main( int argc, char **argv )
 	  }
 	else
 	  {
-	     if ( what == 1 )
-	       {
-		  default_listen_port = atoi( argv[i] );
-		  if ( default_listen_port < 1 || default_listen_port > 65535 )
-		    {
-		       debugf( "Port number invalid." );
-		       help = 1;
-		    }
-	       }
-	     else if ( what == 2 )
+	     if ( what == 2 )
 	       {
 		  DESCRIPTOR *desc;
 		  
@@ -4976,14 +5022,25 @@ int main( int argc, char **argv )
    
    if ( !safe_mode )
      {
-	/* Signal handling. */
+	int val;
+        
+        /* Signal handling. */
 	signal( SIGSEGV, sig_segv_handler );
 	
-	/* Load and register all modules. */
-	modules_register( );
-	
-	/* Initialize all modules. */
-	module_init_data( );
+        val = ironmoon_init( );
+        
+        if ( val == 2 )
+          {
+             debugf( "No configuration file found, generating one." );
+             debugf( "Look over 'config.txt' and see if it's correct, then run me again." );
+             return 0;
+          }
+        
+	if ( val == 1 )
+          {
+             debugf( "Buggy config.txt file. Try to fix it, and if you can't, delete it." );
+             return 0;
+          }
      }
    
    if ( copyover == 1 )
@@ -5165,26 +5222,6 @@ int cmp( char *trigger, char *string )
 
 
 /* Configuration system. */
-
-typedef struct config_element_data CONFIG_ELEMENT;
-
-struct config_element_data
-{
-   char *key;
-   
-   char *value;
-   
-   int is_list;
-   CONFIG_ELEMENT *first;
-   CONFIG_ELEMENT *last;
-   
-   char *description;
-   
-   CONFIG_ELEMENT *next;
-};
-
-
-CONFIG_ELEMENT *global_config;
 
 
 /* Loads it all into memory. Easier to do look-aheads this way. */
@@ -5387,6 +5424,16 @@ char *read_config_description( char **config, int two )
 }
 
 
+int restricted_config_char( char c )
+{
+   if ( c == '=' || c == ',' || c == '{' || c == '}' ||
+        c == '#' )
+     return 1;
+   
+   return 0;
+}
+
+
 char *read_config_value( char **config )
 {
    char end_char = 0;
@@ -5408,7 +5455,7 @@ char *read_config_value( char **config )
              if ( *p == end_char )
                break;
           }
-        else if ( isspace( *p ) || *p == '=' || *p == ',' )
+        else if ( isspace( *p ) || restricted_config_char( *p ) )
           break;
         
         if ( *p == '\\' )
@@ -5450,11 +5497,17 @@ char *read_config_value( char **config )
    *v = 0;
    *config = p;
    
+   if ( !strcmp( value, "none" ) )
+     {
+        free( value );
+        return NULL;
+     }
+   
    return value;
 }
 
 
-void read_config_list( char **config, CONFIG_ELEMENT *list )
+int read_config_list( char **config, CONFIG_ELEMENT *list )
 {
    CONFIG_ELEMENT *list2;
    char *word1, *word2, *description;
@@ -5485,7 +5538,9 @@ void read_config_list( char **config, CONFIG_ELEMENT *list )
           {
              debugf( "Buggy config file, while reading for the '%s' list!",
                      list->key );
-             return;
+             if ( description )
+               free( description );
+             return 1;
           }
         
         word1 = NULL;
@@ -5501,6 +5556,9 @@ void read_config_list( char **config, CONFIG_ELEMENT *list )
              if ( **config != '=' )
                {
                   set_config_value( NULL, word1, list, description );
+                  
+                  if ( **config == ',' )
+                    (*config)++;
                   continue;
                }
              
@@ -5525,24 +5583,33 @@ void read_config_list( char **config, CONFIG_ELEMENT *list )
              
              list2 = set_config_list( word1, list, description );
              
-             read_config_list( config, list2 );
+             if ( read_config_list( config, list2 ) )
+               return 1;
              
              if ( **config != '}' )
                {
                   debugf( "Buggy config file, expect '}' while reading for "
                           "the '%s' list!", list2->key );
-                  return;
+                  return 1;
                }
              (*config)++;
           }
+        
+        while ( isspace( **config ) )
+          (*config)++;
+        if ( **config == ',' )
+          (*config)++;
      }
+   
+   return 0;
 }
 
 
 
-int read_config2( const char *section, const char *file )
+int read_config( const char *section, const char *file )
 {
    CONFIG_ELEMENT *elem;
+   char *description;
    char *config, *p;
    
    /* Must be valid, or else we might attempt to load section "". */
@@ -5551,7 +5618,7 @@ int read_config2( const char *section, const char *file )
    
    config = load_file( file );
    if ( !config )
-     return 1;
+     return 0;
    
    for ( elem = global_config; elem; elem = elem->next )
      if ( !strcmp( section, elem->key ) )
@@ -5570,7 +5637,11 @@ int read_config2( const char *section, const char *file )
      }
    
    p = config;
-   read_config_list( &p, elem );
+   
+   description = read_config_description( &p, 1 );
+   if ( read_config_list( &p, elem ) )
+     return 1;
+   elem->description = description;
    
    free( config );
    
@@ -5578,24 +5649,71 @@ int read_config2( const char *section, const char *file )
 }
 
 
-void save_config_description( FILE *fl, char *desc, int indent, int two )
+void save_config_description( FILE *fl, const char *desc,
+                              int indent, int two )
 {
    int i;
    
-   for ( i = 0; i < indent; i++ )
-     fprintf( fl, " " );
-   
-   if ( two )
-     fprintf( fl, "#" );
-   fprintf( fl, "# Description\n" );
+   while ( *desc )
+     {
+        for ( i = 0; i < indent; i++ )
+          fprintf( fl, " " );
+        
+        if ( two )
+          fprintf( fl, "#" );
+        fprintf( fl, "# " );
+        
+        while ( *desc && *desc != '\n' && *desc != '\r' )
+          fprintf( fl, "%c", *(desc++) );
+        
+        fprintf( fl, "\n" );
+        
+        while ( *desc == '\n' || *desc == '\r' )
+          desc++;
+     }
 }
 
 
 void save_config_value( FILE *fl, char *value )
 {
-   fprintf( fl, "'%s'", value );
+   int quotes = 0;
+   char *v;
    
+   if ( !value )
+     {
+        fprintf( fl, "none" );
+        return;
+     }
    
+   /* First pass.. find out if we need quotes. */
+   v = value;
+   while ( *v )
+     {
+        if ( isspace(*v) || restricted_config_char( *v ) )
+          {
+             quotes = 1;
+             break;
+          }
+        
+        v++;
+     }
+   
+   /* Second pass... write to file. */
+   if ( quotes )
+     fprintf( fl, "'" );
+   
+   v = value;
+   while ( *v )
+     {
+        if ( *v == '\'' || *v == '\"' )
+          fprintf( fl, "\\" );
+        fprintf( fl, "%c", *v );
+        
+        v++;
+     }
+   
+   if ( quotes )
+     fprintf( fl, "'" );
 }
 
 
@@ -5603,6 +5721,7 @@ void save_config_list( FILE *fl, CONFIG_ELEMENT *first, int indent )
 {
    CONFIG_ELEMENT *elem;
    int style = 0;
+   int key_count = 0;
    int i;
    
    /* First pass; figure out the style to use.
@@ -5611,7 +5730,8 @@ void save_config_list( FILE *fl, CONFIG_ELEMENT *first, int indent )
     */
    for ( elem = first; elem; elem = elem->next )
      if ( elem->description ||
-          elem->is_list )
+          elem->is_list ||
+          ( elem->key && ++key_count >= 2 ) )
        {
           style = 1;
           break;
@@ -5645,10 +5765,8 @@ void save_config_list( FILE *fl, CONFIG_ELEMENT *first, int indent )
                save_config_value( fl, elem->value );
              
              fprintf( fl, "\n" );
-             if ( elem->description )
-               fprintf( fl, "\n" );
-             if ( elem->next )
-               fprintf( fl, "\n" );
+             if ( elem->description && elem->next )
+               fprintf( fl, "\n\n" );
           }
         
         for ( i = 0; i < indent - 2; i++ )
@@ -5695,11 +5813,237 @@ void save_config( const char *section, const char *file )
    
    if ( elem->description )
      save_config_description( fl, elem->description, 0, 1 );
+   else
+     save_config_description( fl, section, 0, 1 );
    
-   fprintf( fl, "\n\n\n" );
+   fprintf( fl, "\n\n" );
    
    save_config_list( fl, elem->first, 0 );
    
    fclose( fl );
+}
+
+
+CONFIG_ELEMENT *get_config_path( char *varpath, int create )
+{
+   CONFIG_ELEMENT *elem = NULL, *list;
+   char *p;
+   
+   p = varpath;
+   while ( *p && *p != '.' )
+     p++;
+   
+   if ( p - varpath == 0 )
+     return NULL;
+   
+   for ( elem = global_config; elem; elem = elem->next )
+     if ( elem->key && !strncmp( elem->key, varpath, p - varpath ) )
+       break;
+   
+   if ( !elem )
+     {
+        if ( !create )
+          return NULL;
+        
+        elem = calloc( 1, sizeof( CONFIG_ELEMENT ) );
+        
+        elem->key = malloc( p - varpath + 1 );
+        memcpy( elem->key, varpath, p - varpath );
+        elem->key[p - varpath] = 0;
+        
+        elem->is_list = 1;
+        
+        elem->next = global_config;
+        global_config = elem;
+     }
+   
+   varpath = p;
+   
+   if ( !*varpath )
+     return elem;
+   
+   /* Impossible. */
+   if ( *varpath != '.' )
+     debugf( "Internal error on get_config_path" );
+   varpath++;
+   
+   while ( *varpath )
+     {
+        if ( *varpath == '.' )
+          return NULL;
+        
+        p = varpath;
+        while ( *p && *p != '.' )
+          p++;
+        
+        /* Is it actually possible? */
+        if ( p - varpath == 0 )
+          return NULL;
+        
+        list = elem;
+        for ( elem = list->first; elem; elem = elem->next )
+          if ( elem->key && !strncmp( varpath, elem->key, p - varpath ) )
+            break;
+        
+        if ( !elem )
+          {
+             if ( !create )
+               return NULL;
+             
+             elem = calloc( 1, sizeof( CONFIG_ELEMENT ) );
+             
+             elem->key = malloc( p - varpath + 1 );
+             memcpy( elem->key, varpath, p - varpath );
+             elem->key[p - varpath] = 0;
+             
+             if ( *p == '.' || create == 2 )
+               elem->is_list = 1;
+             else
+               elem->is_list = 0;
+             
+             if ( !list->first )
+               list->first = list->last = elem;
+             else
+               {
+                  list->last->next = elem;
+                  list->last = elem;
+               }
+          }
+        
+        varpath = p;
+        if ( *varpath != '.' )
+          break;
+        varpath++;
+        
+        /* Not a list? Make it a list. */
+        if ( !elem->is_list )
+          {
+             if ( !create )
+               return NULL;
+             if ( elem->value )
+               free( elem->value );
+             elem->is_list = 1;
+             debugf( "Config element '%s' wasn't a list. I made it be one.",
+                     elem->key );
+          }
+        
+     }
+   
+   return elem;
+}
+
+
+
+CONFIG_ELEMENT *config_getlist( char *varpath )
+{
+   CONFIG_ELEMENT *elem;
+   
+   elem = get_config_path( varpath, 0 );
+   
+   if ( !elem || !elem->is_list )
+     return NULL;
+   
+   return elem->first;
+}
+
+const char *config_getvalue( char *varpath )
+{
+   CONFIG_ELEMENT *elem;
+   
+   elem = get_config_path( varpath, 0 );
+   
+   if ( !elem || elem->is_list )
+     return NULL;
+   
+   return elem->value;
+}
+
+void config_delitem( char *varpath )
+{
+   
+   
+   
+}
+
+void config_setdescription( char *varpath, char *description )
+{
+   CONFIG_ELEMENT *elem;
+   
+   elem = get_config_path( varpath, 0 );
+   
+   if ( !elem )
+     return;
+   
+   if ( elem->description )
+     free( elem->description );
+   
+   elem->description = strdup( description );
+}
+
+
+void config_setvalue( char *varpath, char *value )
+{
+   CONFIG_ELEMENT *elem;
+   
+   elem = get_config_path( varpath, 1 );
+   
+   if ( !elem )
+     return;
+   
+   if ( elem->is_list )
+     {
+        destroy_config_list( elem->first );
+        elem->first = elem->last = 0;
+        elem->is_list = 0;
+     }
+   
+   if ( elem->value )
+     free( elem->value );
+   
+   if ( !strcmp( value, "none" ) )
+     elem->value = NULL;
+   else
+     elem->value = strdup( value );
+}
+
+void config_addvalue( char *varpath, char *value )
+{
+   CONFIG_ELEMENT *elem;
+   
+   elem = get_config_path( varpath, 2 );
+   
+   if ( !elem )
+     return;
+   
+   if ( !elem->is_list )
+     {
+        if ( elem->value )
+          free( elem->value );
+        elem->value = NULL;
+        elem->is_list = 1;
+     }
+   
+   if ( !strcmp( value, "none" ) )
+     value = NULL;
+   
+   set_config_value( NULL, value, elem, NULL );
+}
+
+void config_setlist( char *varpath )
+{
+   CONFIG_ELEMENT *elem;
+   
+   elem = get_config_path( varpath, 2 );
+   
+   if ( !elem )
+     return;
+   
+   if ( !elem->is_list )
+     {
+        if ( elem->value )
+          free( elem->value );
+        elem->value = NULL;
+        elem->is_list = 1;
+     }
 }
 

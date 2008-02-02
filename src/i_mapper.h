@@ -48,6 +48,9 @@ struct exit_data
    int vnum;
    ROOM_DATA *to;
    
+   /* A switch to turn it on and off. */
+   ELEMENT *tag;
+   
    /* Chain links. */
    EXIT_DATA *next;
    ROOM_DATA *owner;
@@ -170,28 +173,6 @@ struct map_element
 };
 
 
-#define MAX_HASH 512
-
-//#define MAP_X 18
-//#define MAP_Y 14
-#define MAP_X 14
-#define MAP_Y 10
-
-
-#define EX_N	1
-#define EX_NE	2
-#define EX_E	3
-#define EX_SE	4
-#define EX_S	5
-#define EX_SW	6
-#define EX_W	7
-#define EX_NW	8
-#define EX_U	9
-#define EX_D	10
-#define EX_IN	11
-#define EX_OUT	12
-
-
 /* Room type structure. */
 struct room_type_data
 {
@@ -243,3 +224,31 @@ struct element_data
 };
 
 
+
+
+#define MAX_HASH 512
+
+//#define MAP_X 18
+//#define MAP_Y 14
+#define MAP_X 14
+#define MAP_Y 10
+
+
+#define EX_N	1
+#define EX_NE	2
+#define EX_E	3
+#define EX_SE	4
+#define EX_S	5
+#define EX_SW	6
+#define EX_W	7
+#define EX_NW	8
+#define EX_U	9
+#define EX_D	10
+#define EX_IN	11
+#define EX_OUT	12
+
+/* Map modes */
+#define NONE		0
+#define FOLLOWING	1
+#define CREATING	2
+#define GET_UNLOST	3

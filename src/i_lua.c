@@ -621,6 +621,8 @@ int i_lua_process_client_command( char *cmd )
      }
    else if ( !strcmp( buf, "load" ) || !strcmp( buf, "reload" ) )
      {
+        ILUA_MOD *mod_next;
+        
         get_string( p, buf, 4096 );
         
         if ( !buf[0] )
@@ -629,14 +631,18 @@ int i_lua_process_client_command( char *cmd )
              return 0;
           }
         
-        for ( mod = ilua_modules; mod; mod = mod->next )
-          if ( !strcmp( buf, "all" ) || !strcmp( mod->name, buf ) )
-            {
-               clientff( C_R "[Unloading current '%s' module.]\r\n" C_0,
-                         mod->name );
-               ilua_callback( mod->L, "unload", NULL, mod->work_dir );
-               close_ilua_module( mod );
-            }
+        for ( mod = ilua_modules; mod; mod = mod_next )
+          {
+             mod_next = mod->next;
+             
+             if ( !strcmp( buf, "all" ) || !strcmp( mod->name, buf ) )
+               {
+                  clientff( C_R "[Unloading current '%s' module.]\r\n" C_0,
+                            mod->name );
+                  ilua_callback( mod->L, "unload", NULL, mod->work_dir );
+                  close_ilua_module( mod );
+               }
+          }
         
         if ( !strcmp( buf, "all" ) )
           {

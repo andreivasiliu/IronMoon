@@ -130,10 +130,6 @@ COLOR_DATA color_names[] =
 int parsing_room;
 
 int mode;
-#define NONE            0
-#define FOLLOWING       1
-#define CREATING        2
-#define GET_UNLOST      3
 
 int get_unlost_exits;
 int get_unlost_detected_exits[13];
@@ -159,10 +155,12 @@ int godname;
 int warn_misaligned;
 int warn_environment;
 int warn_unlinked;
+int allow_title_update;
 int capture_special_exit;
 int special_exit_vnum;
 int special_exit_nocommand;
 int special_exit_alias;
+char *special_exit_tag;
 
 /* config.mapper.txt options. */
 int disable_swimming;
@@ -206,6 +204,9 @@ char extra_dir_map[MAP_X+2][MAP_Y+2];
 
 /* New! */
 MAP_ELEMENT map_new[MAP_X][MAP_Y];
+
+/* Newer! */
+ELEMENT *exit_tags;
 
 int last_vnum;
 
@@ -895,6 +896,276 @@ int room_cmp( const char *room, const char *smallr )
    
    return 1;
 }
+
+
+
+ROOM_DATA *locate_nearby_room( const char *title, int dir )
+{
+   EXIT_DATA *spexit;
+   
+   if ( !current_room )
+     return NULL;
+   
+   /* 0: Same room. */
+   if ( !dir )
+     {
+        if ( strcmp( current_room->name, title ) )
+          return NULL;
+        
+        return current_room;
+     }
+   
+   /* >0: Around the room. */
+   if ( dir != -1 )
+     {
+        if ( !current_room->exits[dir] ||
+             strcmp( current_room->exits[dir]->name, title ) )
+          return NULL;
+        
+        return current_room->exits[dir];
+     }
+   
+   /* -1: To the 'ether'.. Special exits. */
+   for ( spexit = current_room->special_exits; spexit; spexit = spexit->next )
+     {
+        if ( spexit->to && !strcmp( spexit->to->name, title ) )
+          return spexit->to;
+     }
+   
+   return NULL;
+}
+
+
+
+ROOM_DATA *locate_faraway_room( const char *title, int *detected_exits,
+                                int *rooms_found )
+{
+   ROOM_DATA *r, *found = NULL;
+   int matches = 0;
+   int i;
+   
+   for ( r = world; r; r = r->next_in_world )
+     if ( !strcmp( title, r->name ) )
+       {
+          if ( detected_exits )
+            {
+               int perfect_match = 1;
+               for ( i = 1; dir_name[i]; i++ )
+               {
+                  if ( ( detected_exits[i] ? 1 : 0 ) !=
+                       ( ( r->exits[i] || r->detected_exits[i] ) ? 1 : 0 ) )
+                    {
+                       perfect_match = 0;
+                       break;
+                    }
+               }
+               if ( !perfect_match )
+                 continue;
+            }
+          
+          /* A match! */
+          if ( !found )
+            found = r;
+          
+          matches++;
+       }
+   
+   if ( rooms_found )
+     *rooms_found = matches;
+   
+   return found;
+}
+
+
+
+void check_title( const char *title, int dir, int *detected_exits )
+{
+   ROOM_DATA *new_room;
+   int created = 0;
+   
+   if ( mode != CREATING )
+     return;
+   
+   if ( !current_room )
+     return;
+   
+   /* Not just a 'look'? */
+   if ( dir )
+     {
+        if ( current_room->exits[dir] )
+          {
+             /* Just follow around. */
+             new_room = current_room->exits[dir];
+          }
+        else
+          {
+             char *color = C_G;
+             
+             /* Check for autolinking. */
+             if ( !link_next_to && !disable_autolink && !switch_exit_stops_mapping )
+               {
+                  ROOM_DATA *get_room_at( int dir, int length );
+                  int length;
+                  
+                  if ( set_length_to == -1 )
+                    length = 1;
+                  else
+                    length = set_length_to + 1;
+                  
+                  link_next_to = get_room_at( dir, length );
+                  
+                  if ( link_next_to && strcmp( title, link_next_to->name ) )
+                    link_next_to = NULL;
+                  
+                  if ( link_next_to && link_next_to->exits[reverse_exit[dir]] )
+                    link_next_to = NULL;
+                  
+                  color = C_C;
+               }
+             
+             /* Create or link an exit. */
+             if ( link_next_to )
+               {
+                  new_room = link_next_to;
+                  link_next_to = NULL;
+                  clientff( C_R " (%slinked" C_R ")" C_0, color );
+               }
+             else
+               {
+                  new_room = create_room( -1 );
+                  clientf( C_R " (" C_G "created" C_R ")" C_0 );
+                  created = 1;
+                  if ( !disable_autolink )
+                    check_for_duplicates = 1;
+               }
+             
+             link_rooms( current_room, dir, new_room );
+             if ( !unidirectional_exit )
+               {
+                  if ( !new_room->exits[reverse_exit[dir]] )
+                    {
+                       link_rooms( new_room, reverse_exit[dir], current_room );
+                    }
+                  else
+                    {
+                       current_room->exits[dir] = NULL;
+                       clientf( C_R " (" C_G "unlinked: reverse error" C_R ")" );
+                    }
+               }
+             else
+               unidirectional_exit = 0;
+          }
+        
+        /* Change the length, if asked so. */
+        if ( set_length_to )
+          {
+             if ( set_length_to == -1 )
+               set_length_to = 0;
+             
+             current_room->exit_length[dir] = set_length_to;
+             if ( new_room->exits[reverse_exit[dir]] == current_room )
+               new_room->exit_length[reverse_exit[dir]] = set_length_to;
+             clientf( C_R " (" C_G "l set" C_R ")" C_0 );
+             
+             set_length_to = 0;
+          }
+        
+        /* Stop mapping from here on? */
+        if ( switch_exit_stops_mapping )
+          {
+             int i;
+             
+             i = current_room->exit_stops_mapping[dir];
+             
+             i = !i;
+             
+             current_room->exit_stops_mapping[dir] = i;
+             if ( new_room->exits[reverse_exit[dir]] == current_room )
+               new_room->exit_stops_mapping[reverse_exit[dir]] = i;
+             
+             if ( i )
+               clientf( C_R " (" C_G "s set" C_R ")" C_0 );
+             else
+               clientf( C_R " (" C_G "s unset" C_R ")" C_0 );
+             
+             switch_exit_stops_mapping = 0;
+          }
+        
+        /* Show rooms even from another area? */
+        if ( switch_exit_joins_areas )
+          {
+             int i;
+             
+             i = current_room->exit_joins_areas[dir];
+             
+             i = !i;
+             
+             if ( i && ( current_room->area == new_room->area ) )
+               clientf( C_R " (" C_G "j NOT set" C_R ")" C_0 );
+             else
+               {
+                  current_room->exit_joins_areas[dir] = i;
+                  if ( new_room->exits[reverse_exit[dir]] == current_room )
+                    new_room->exit_joins_areas[reverse_exit[dir]] = i;
+                  
+                  if ( i )
+                    clientf( C_R " (" C_G "j set" C_R ")" C_0 );
+                  else
+                    clientf( C_R " (" C_G "j unset" C_R ")" C_0 );
+               }
+             
+             switch_exit_joins_areas = 0;
+          }
+        
+        /* Show this somewhere else on the map, instead? */
+        if ( use_direction_instead )
+          {
+             if ( use_direction_instead == -1 )
+               use_direction_instead = 0;
+             
+             current_room->use_exit_instead[dir] = use_direction_instead;
+             if ( new_room->exits[reverse_exit[dir]] == current_room )
+               new_room->use_exit_instead[reverse_exit[dir]] = reverse_exit[use_direction_instead];
+             if ( use_direction_instead )
+               clientf( C_R " (" C_G "u set" C_R ")" C_0 );
+             else
+               clientf( C_R " (" C_G "u unset" C_R ")" C_0 );
+             
+             use_direction_instead = 0;
+          }
+        
+        current_room = new_room;
+        current_area = new_room->area;
+     }
+   
+   if ( !strcmp( current_room->name, title ) )
+     {
+        clientff( C_R " (" C_G "%d" C_R ")" C_0, current_room->vnum );
+        
+     }
+   else if ( allow_title_update || created )
+     {
+        if ( !created )
+          clientf( C_R " (" C_G "updated" C_R ")" C_0 );
+        
+        if ( current_room->name )
+          free( current_room->name );
+        current_room->name = strdup( title );
+        
+        allow_title_update = 0;
+     }
+   else
+     {
+        clientf( C_R " (Wrong room name! Automapping disabled)" C_0 );
+        mode = GET_UNLOST;
+        return;
+     }
+   
+   /* Update exits. */
+   
+   // TODO
+}
+
 
 
 /* This is a title. Do something with it. */
@@ -8622,6 +8893,14 @@ void do_exit_special( char *arg )
                }
              
              special_exit_alias = i;
+          }
+        else if ( !strcmp( cmd, "tag" ) )
+          {
+             arg = get_string( arg, cmd, 256 );
+             
+             if ( special_exit_tag )
+               free( special_exit_tag );
+             special_exit_tag = strdup( cmd );
           }
         else
           {

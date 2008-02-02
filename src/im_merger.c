@@ -17,15 +17,21 @@
 
 /* Declarations from i_mapper.c */
 ROOM_DATA *get_room( int vnum );
-extern ROOM_DATA *current_room;
 void mapper_start( );
 void destroy_map( );
 void i_mapper_module_unload( );
 int  i_mapper_process_client_aliases( char *cmd );
-extern char *dir_name[];
-extern char *dir_small_name[];
 int parse_title( const char *line );
 int load_map( const char *file );
+ROOM_DATA *locate_nearby_room( const char *title, int dir );
+ROOM_DATA *locate_faraway_room( const char *title, int *detected_exits,
+                                int *rooms_found );
+
+extern ROOM_DATA *current_room;
+extern AREA_DATA *current_area;
+extern char *dir_name[];
+extern char *dir_small_name[];
+extern int mode;
 
 
 /* Our own structures, used in userdata payloads. */
@@ -101,6 +107,190 @@ int merger_destroy_map( lua_State *L )
 }
 
 
+int merger_locate_nearby( lua_State *L )
+{
+   ROOM_DATA *room;
+   const char *title;
+   int dir = 0;
+   
+   if ( lua_gettop( L ) < 1 ||
+        !lua_isstring( L, 1 ) )
+     {
+        lua_pushstring( L, "No valid arguments provided to locate_nearby." );
+        lua_error( L );
+     }
+   
+   title = lua_tostring( L, 1 );
+   
+   if ( lua_gettop( L ) >= 2 && lua_isstring( L, 2 ) )
+     {
+        const char *dirstring;
+        
+        dirstring = lua_tostring( L, 2 );
+        
+        if ( strcmp( dirstring, "look" ) )
+          {
+             for ( dir = 1; dir_name[dir]; dir++ )
+               if ( !strcmp( dirstring, dir_name[dir] ) ||
+                    !strcmp( dirstring, dir_small_name[dir] ) )
+                 break;
+             
+             if ( !dir_name[dir] )
+               {
+                  lua_pushstring( L, "Invalid second argument to locate_nearby." );
+                  lua_error( L );
+               }
+          }
+     }
+   
+   room = locate_nearby_room( title, dir );
+   
+   merger_push_room( L, room );
+   
+   return 1;
+}
+
+
+int merger_locate_faraway( lua_State *L )
+{
+   ROOM_DATA *room;
+   const char *title;
+   int matches;
+   int detected_exits[13];
+   int *de = NULL;
+   
+   if ( lua_gettop( L ) < 1 ||
+        !lua_isstring( L, 1 ) )
+     {
+        lua_pushstring( L, "No valid arguments provided to locate_faraway." );
+        lua_error( L );
+     }
+   
+   title = lua_tostring( L, 1 );
+   
+   if ( lua_gettop( L ) >= 2 && lua_istable( L, 2 ) )
+     {
+        const char *dirstring;
+        int dir;
+        int i = 1;
+        
+        for ( dir = 0; dir < 13; dir++ )
+          detected_exits[dir] = 0;
+        de = detected_exits;
+        
+        while ( 1 )
+          {
+             lua_pushinteger( L, i );
+             lua_gettable( L, 2 );
+             
+             if ( lua_isstring( L, -1 ) )
+               {
+                  dirstring = lua_tostring( L, -1 );
+                  for ( dir = 1; dir_name[dir]; dir++ )
+                    if ( !strcmp( dirstring, dir_name[dir] ) ||
+                         !strcmp( dirstring, dir_small_name[dir] ) )
+                      break;
+                  
+                  if ( dir_name[dir] )
+                    detected_exits[dir] = 1;
+               }
+             
+             if ( lua_isnil( L, -1 ) )
+               {
+                  lua_pop( L, 1 );
+                  break;
+               }
+             
+             lua_pop( L, 1 );
+             i++;
+          }
+     }
+   
+   room = locate_faraway_room( title, de, &matches );
+   
+   merger_push_room( L, room );
+   lua_pushinteger( L, matches );
+   
+   return 2;
+}
+
+
+
+int merger_map_newindex( lua_State *L )
+{
+   const char *field;
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index the map-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   field = lua_tostring( L, 2 );
+   
+   if ( !strcmp( field, "mode" ) )
+     {
+        const char *value;
+        
+        if ( !lua_isstring( L, 3 ) )
+          {
+             lua_pushstring( L, "map.mode accepts only string values." );
+             lua_error( L );
+          }
+        
+        value = lua_tostring( L, 3 );
+        
+        if ( !strcmp( value, "none" ) )
+          mode = NONE;
+        else if ( !strcmp( value, "get_unlost" ) )
+          mode = GET_UNLOST;
+        else if ( !strcmp( value, "following" ) ||
+                  !strcmp( value, "follow" ) )
+          mode = FOLLOWING;
+        else if ( !strcmp( value, "creating" ) ||
+                  !strcmp( value, "create" ) )
+          mode = CREATING;
+        else
+          {
+             lua_pushstring( L, "map.mode accepts only 'none', "
+                             "'get_unlost', 'following', or 'creating'." );
+             lua_error( L );
+          }
+     }
+   else if ( !strcmp( field, "current_room" ) )
+     {
+        if ( lua_isnil( L, 3 ) )
+          {
+             current_room = NULL;
+             current_area = NULL;
+          }
+        else if ( !lua_isuserdata( L, 3 ) )
+          {
+             lua_pushstring( L, "map.current_room accepts only 'nil' or a room-userdata." );
+             lua_error( L );
+          }
+        else
+          {
+             ROOM_DATA *room;
+             
+             room = *(ROOM_DATA**) lua_touserdata( L, 3 );
+             
+             current_room = room;
+             if ( current_room )
+               current_area = current_room->area;
+          }
+     }
+   else
+     {
+        lua_pushfstring( L, "'map' does not accept a writable '%s' property.",
+                        field );
+        lua_error( L );
+     }
+   
+   return 0;
+}
+
+
 
 int merger_map_index( lua_State *L )
 {
@@ -129,6 +319,25 @@ int merger_map_index( lua_State *L )
    else if ( !strcmp( field, "destroy" ) )
      {
         lua_pushcfunction( L, merger_destroy_map );
+     }
+   else if ( !strcmp( field, "locate_nearby" ) )
+     {
+        lua_pushcfunction( L, merger_locate_nearby );
+     }
+   else if ( !strcmp( field, "locate_faraway" ) )
+     {
+        lua_pushcfunction( L, merger_locate_faraway );
+     }
+   else if ( !strcmp( field, "mode" ) )
+     {
+        if ( mode == GET_UNLOST )
+          lua_pushstring( L, "get_unlost" );
+        else if ( mode == FOLLOWING )
+          lua_pushstring( L, "following" );
+        else if ( mode == CREATING )
+          lua_pushstring( L, "creating" );
+        else
+          lua_pushstring( L, "none" );
      }
    else
      {
@@ -416,6 +625,8 @@ void merger_open_api( lua_State *L )
    
    lua_pushcfunction( L, merger_map_index );
    lua_setfield( L, -2, "__index" );
+   lua_pushcfunction( L, merger_map_newindex );
+   lua_setfield( L, -2, "__newindex" );
    
    lua_setmetatable( L, -2 );
    

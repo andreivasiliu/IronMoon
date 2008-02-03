@@ -236,7 +236,6 @@ void read_ilua_config( char *file_name, char *mod_name )
              get_string( p, arg, 4096 );
              if ( arg[0] )
                {
-                  mod->work_dir = strdup( arg );
                   getcwd( current_work_dir, 4096 );
                   if ( chdir( arg ) )
                     {

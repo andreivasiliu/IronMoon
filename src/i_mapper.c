@@ -654,8 +654,11 @@ void destroy_exit( EXIT_DATA *spexit )
 
 void free_room( ROOM_DATA *room )
 {
-   if ( room->name )
-     free( room->name );
+   int i;
+   
+   for ( i = 1; dir_name[i]; i++ )
+     if ( room->exits[i] )
+       unlink_rooms( room, i, room->exits[i] );
    
    while ( room->rev_exits )
      {
@@ -668,21 +671,12 @@ void free_room( ROOM_DATA *room )
    
    while ( room->special_exits )
      destroy_exit( room->special_exits );
-/*   for ( e = room->special_exits; e; e = e_next )
-     {
-        e_next = e->next;
-        
-        if ( e->to )
-          {
-             r = e->to;
-             e->to = NULL;
-          }
-        
-        free_exit( e );
-     }*/
    
    while ( room->tags )
      unlink_element( room->tags );
+   
+   if ( room->name )
+     free( room->name );
    
    free( room );
 }
@@ -758,6 +752,9 @@ void destroy_area( AREA_DATA *area )
        }
    
    /* Free it up. */
+   if ( area->name )
+     free( area->name );
+   
    free( area );
 }
 
@@ -766,39 +763,25 @@ void destroy_area( AREA_DATA *area )
 /* Destroy everything. */
 void destroy_map( )
 {
-   ROOM_DATA *room, *next_room;
-   AREA_DATA *area, *next_area;
    int i;
    
    DEBUG( "destroy_map" );
    
+   /* Global special exits. */
+   while ( global_special_exits )
+     destroy_exit( global_special_exits );
+   
    /* Rooms. */
-   for ( room = world; room; room = next_room )
-     {
-        next_room = room->next_in_world;
-        
-        /* Free it up. */
-        free_room( room );
-     }
+   while ( world )
+     destroy_room( world );
    
    /* Areas. */
-   for ( area = areas; area; area = next_area )
-     {
-        next_area = area->next;
-        
-        /* Free it up. */
-        if ( area->name )
-          free( area->name );
-        free( area );
-     }
+   while ( areas )
+     destroy_area( areas );
    
    /* Hash table. */
    for ( i = 0; i < MAX_HASH; i++ )
      hash_world[i] = NULL;
-   
-   /* Global special exits. */
-   while ( global_special_exits )
-     destroy_exit( global_special_exits );
    
    world = world_last = NULL;
    areas = areas_last = NULL;

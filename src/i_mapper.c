@@ -4830,9 +4830,9 @@ void i_mapper_module_init_data( )
 
 #define LOW_CASE( a ) ( (a) >= 'A' && (a) <= 'Z' ? (a) - 'A' + 'a' : (a) )
 
-int case_strstr( char *haystack, char *needle )
+int case_strstr( const char *haystack, const char *needle )
 {
-   char *h = haystack, *n = needle;
+   const char *h = haystack, *n = needle;
    
    while ( *h )
      {
@@ -6456,7 +6456,7 @@ void i_mapper_process_server_paragraph( LINES *l )
 
 
 
-AREA_DATA *get_area_by_name( char *string )
+AREA_DATA *get_area_by_name( const char *string )
 {
    AREA_DATA *area = NULL, *a;
    
@@ -6508,7 +6508,7 @@ AREA_DATA *get_area_by_name( char *string )
 
 /* Map commands. */
 
-void do_map( char *arg )
+void do_map( const char *arg )
 {
    ROOM_DATA *room;
    
@@ -6536,7 +6536,7 @@ void do_map( char *arg )
 
 
 
-void do_map_old( char *arg )
+void do_map_old( const char *arg )
 {
    ROOM_DATA *room;
    
@@ -6564,7 +6564,7 @@ void do_map_old( char *arg )
 
 
 
-void do_map_help( char *arg )
+void do_map_help( const char *arg )
 {
    clientfr( "Module: IMapper. Commands:" );
    clientf( " map help     - This help.\r\n"
@@ -6593,7 +6593,7 @@ void do_map_help( char *arg )
 
 
 
-void do_map_create( char *arg )
+void do_map_create( const char *arg )
 {
    if ( !strcmp( arg, "newroom" ) )
      {
@@ -6624,7 +6624,7 @@ void do_map_create( char *arg )
 
 
 
-void do_map_follow( char *arg )
+void do_map_follow( const char *arg )
 {
    if ( !current_room )
      {
@@ -6640,7 +6640,7 @@ void do_map_follow( char *arg )
 
 
 
-void do_map_none( char *arg )
+void do_map_none( const char *arg )
 {
    if ( mode != NONE )
      {
@@ -6653,7 +6653,7 @@ void do_map_none( char *arg )
 
 
 
-void do_map_save( char *arg )
+void do_map_save( const char *arg )
 {
    if ( !strcmp( arg, "binary" ) )
      {
@@ -6669,7 +6669,7 @@ void do_map_save( char *arg )
 
 
 
-void do_map_load( char *arg )
+void do_map_load( const char *arg )
 {
    char buf[256];
    
@@ -6692,7 +6692,7 @@ void do_map_load( char *arg )
 
 
 
-void do_map_path( char *arg )
+void do_map_path( const char *arg )
 {
    ROOM_DATA *room;
    ELEMENT *tag;
@@ -6794,7 +6794,7 @@ void do_map_path( char *arg )
 
 
 
-void do_map_status( char *arg )
+void do_map_status( const char *arg )
 {
    AREA_DATA *a;
    ROOM_DATA *r;
@@ -6859,7 +6859,7 @@ void do_map_status( char *arg )
 
 
 
-void do_map_color( char *arg )
+void do_map_color( const char *arg )
 {
    char buf[256];
    int i;
@@ -6897,7 +6897,7 @@ void do_map_color( char *arg )
 
 
 
-void do_map_bump( char *arg )
+void do_map_bump( const char *arg )
 {
    if ( !current_room )
      {
@@ -6958,7 +6958,7 @@ void do_map_bump( char *arg )
 
 
 
-void do_map_queue( char *arg )
+void do_map_queue( const char *arg )
 {
    char buf[256];
    int i;
@@ -6988,7 +6988,7 @@ void do_map_queue( char *arg )
 
 
 
-void do_map_config( char *arg )
+void do_map_config( const char *arg )
 {
    char option[256];
    int i;
@@ -7092,7 +7092,7 @@ void do_map_config( char *arg )
 
 
 
-void do_map_orig( char *arg )
+void do_map_orig( const char *arg )
 {
    ROOM_DATA *room, *r;
    int rooms = 0, original_rooms = 0;
@@ -7126,7 +7126,7 @@ void do_map_orig( char *arg )
 
 
 
-void do_map_file( char *arg )
+void do_map_file( const char *arg )
 {
    if ( !arg[0] )
      {
@@ -7146,7 +7146,7 @@ void do_map_file( char *arg )
 
 
 /* Snatched from do_exit_special. */
-void do_map_teleport( char *arg )
+void do_map_teleport( const char *arg )
 {
    EXIT_DATA *spexit;
    char cmd[256];
@@ -7387,7 +7387,7 @@ void do_map_teleport( char *arg )
 
 
 
-void do_map_window( char *arg )
+void do_map_window( const char *arg )
 {
    if ( floating_map_enabled )
      {
@@ -7422,7 +7422,7 @@ void do_map_window( char *arg )
 
 /* Area commands. */
 
-void do_area_help( char *arg )
+void do_area_help( const char *arg )
 {
    clientfr( "Module: IMapper. Area commands:" );
    clientf( " area list   - List all areas.\r\n"
@@ -7436,7 +7436,7 @@ void do_area_help( char *arg )
 
 
 // This could be cleaned up and beautified.
-void do_area_check( char *arg )
+void do_area_check( const char *arg )
 {
    ROOM_DATA *room;
    char buf[256];  
@@ -7511,7 +7511,7 @@ void do_area_check( char *arg )
 
 
 
-void do_area_orig( char *arg )
+void do_area_orig( const char *arg )
 {
    ROOM_DATA *room, *r;
    int rooms = 0, original_rooms = 0;
@@ -7551,7 +7551,7 @@ void do_area_orig( char *arg )
 
 
 
-void do_area_list( char *arg )
+void do_area_list( const char *arg )
 {
    AREA_DATA *area;
    ROOM_DATA *room;
@@ -7609,7 +7609,7 @@ void do_area_list( char *arg )
 
 
 
-void do_area_switch( char *arg )
+void do_area_switch( const char *arg )
 {
    AREA_DATA *area;
    char buf[256];
@@ -7642,7 +7642,7 @@ void do_area_switch( char *arg )
 
 
 
-void do_area_update( char *arg )
+void do_area_update( const char *arg )
 {
    if ( mode != CREATING )
      {
@@ -7664,7 +7664,7 @@ void do_area_update( char *arg )
 
 
 
-void do_area_off( char *arg )
+void do_area_off( const char *arg )
 {
    AREA_DATA *area;
    char buf[256];
@@ -7695,7 +7695,7 @@ void do_area_off( char *arg )
 
 /* Room commands. */
 
-void do_room_help( char *arg )
+void do_room_help( const char *arg )
 {
    clientfr( "Module: IMapper. Room commands:" );
    clientf( " room switch  - Switch current room to another vnum.\r\n"
@@ -7711,7 +7711,7 @@ void do_room_help( char *arg )
 
 
 
-void do_room_switch( char *arg )
+void do_room_switch( const char *arg )
 {
    ROOM_DATA *room;
    char buf[256];
@@ -7738,7 +7738,7 @@ void do_room_switch( char *arg )
 
 
 
-void do_room_find( char *arg )
+void do_room_find( const char *arg )
 {
    ROOM_DATA *room;
    char buf[256];
@@ -7819,7 +7819,7 @@ void do_room_find( char *arg )
 
 
 
-void do_room_look( char *arg )
+void do_room_look( const char *arg )
 {
    ROOM_DATA *room;
    EXIT_DATA *spexit;
@@ -7932,7 +7932,7 @@ void do_room_look( char *arg )
 
 
 
-void do_room_destroy( char *arg )
+void do_room_destroy( const char *arg )
 {
    int i;
    
@@ -8003,7 +8003,7 @@ void do_room_destroy( char *arg )
              
 
 
-void do_room_list( char *arg )
+void do_room_list( const char *arg )
 {
    AREA_DATA *area;
    ROOM_DATA *room;
@@ -8029,7 +8029,7 @@ void do_room_list( char *arg )
 
 
 
-void do_room_underw( char *arg )
+void do_room_underw( const char *arg )
 {
    if ( !current_room )
      {
@@ -8053,10 +8053,11 @@ void do_room_underw( char *arg )
 
 
 
-void do_room_types( char *arg )
+void do_room_types( const char *arg )
 {
    ROOM_TYPE *type, *t;
-   char cmd[256], *p = arg, *color;
+   const char *p = arg;
+   char cmd[256], *color;
    
    if ( !current_room )
      {
@@ -8138,7 +8139,7 @@ void do_room_types( char *arg )
 
 
 
-void do_room_merge( char *arg )
+void do_room_merge( const char *arg )
 {
    ROOM_DATA *r, *old_room, *new_room;
    EXIT_DATA *spexit;
@@ -8401,7 +8402,7 @@ void do_room_merge( char *arg )
 
 
 
-void do_room_tag( char *arg )
+void do_room_tag( const char *arg )
 {
    ROOM_DATA *room;
    ELEMENT *tag;
@@ -8469,7 +8470,7 @@ void do_room_tag( char *arg )
 
 
 
-void do_room_mark( char *arg )
+void do_room_mark( const char *arg )
 {
    char buf[256];
    char buf2[256];
@@ -8491,7 +8492,7 @@ void do_room_mark( char *arg )
 
 /* Exit commands. */
 
-void do_exit_help( char *arg )
+void do_exit_help( const char *arg )
 {
    clientfr( "Module: IMapper. Room exit commands:" );
    clientf( " exit link      - Link room # to this one. Both ways.\r\n"
@@ -8507,7 +8508,7 @@ void do_exit_help( char *arg )
 
 
 
-void do_exit_length( char *arg )
+void do_exit_length( const char *arg )
 {
    if ( mode != CREATING )
      {
@@ -8530,7 +8531,7 @@ void do_exit_length( char *arg )
 
 
 
-void do_exit_stop( char *arg )
+void do_exit_stop( const char *arg )
 {
    if ( mode != CREATING )
      {
@@ -8544,7 +8545,7 @@ void do_exit_stop( char *arg )
 
 
 
-void do_exit_joinareas( char *arg )
+void do_exit_joinareas( const char *arg )
 {
    if ( mode != CREATING )
      {
@@ -8558,7 +8559,7 @@ void do_exit_joinareas( char *arg )
 
 
 
-void do_exit_map( char *arg )
+void do_exit_map( const char *arg )
 {
    char buf[256];
    int i;
@@ -8592,7 +8593,7 @@ void do_exit_map( char *arg )
 
 
 
-void do_exit_link( char *arg )
+void do_exit_link( const char *arg )
 {
    if ( mode != CREATING )
      {
@@ -8618,7 +8619,7 @@ void do_exit_link( char *arg )
 
 
 
-void do_exit_unilink( char *arg )
+void do_exit_unilink( const char *arg )
 {
    if ( mode != CREATING )
      {
@@ -8650,7 +8651,7 @@ void do_exit_unilink( char *arg )
 
 
 
-void do_exit_lock( char *arg )
+void do_exit_lock( const char *arg )
 {
    int i, set, nr;
    
@@ -8694,7 +8695,7 @@ void do_exit_lock( char *arg )
 
 
 
-void do_exit_destroy( char *arg )
+void do_exit_destroy( const char *arg )
 {
    EXIT_DATA *spexit;
    char buf[256];
@@ -8780,7 +8781,7 @@ void do_exit_destroy( char *arg )
 // Add "alias", <create/link <vnum>>, "nocommand"
 // Real: exit special <create/nolink/link <vnum>> [nocommand] [alias <dir>]
 // FIXME: Convert [1,n]!
-void do_exit_special( char *arg )
+void do_exit_special( const char *arg )
 {
    ROOM_DATA *room;
    char cmd[256];
@@ -9075,7 +9076,7 @@ void do_exit_special( char *arg )
 
 /* Normal commands. */
 
-void do_landmarks( char *arg )
+void do_landmarks( const char *arg )
 {
    AREA_DATA *area;
    ROOM_DATA *room;
@@ -9212,7 +9213,7 @@ void print_mhelp_line( char *line )
 
 
 
-void do_mhelp( char *arg )
+void do_mhelp( const char *arg )
 {
    FILE *fl;
    char buf[4096];
@@ -9315,7 +9316,7 @@ void do_mhelp( char *arg )
 
 
 
-void do_old_mhelp( char *arg )
+void do_old_mhelp( const char *arg )
 {
    if ( !strcmp( arg, "index" ) )
      {
@@ -9453,11 +9454,99 @@ FUNC_DATA cmd_table[] =
 };
 
 
+int imapper_commands( const char *cmd )
+{
+   const char *l;
+   char command[4096];
+   int base_cmd;
+   int i;
+   
+   /* Process from command table. */
+   
+   l = cmd;
+   
+   /* First, check for compound commands. */
+   if ( !strncmp( l, "room ", 5 ) )
+     base_cmd = CMD_ROOM, l += 5;
+   else if ( !strncmp( l, "r ", 2 ) )
+     base_cmd = CMD_ROOM, l += 2;
+   else if ( !strncmp( l, "R", 1 ) )
+     base_cmd = CMD_ROOM, l += 1;
+   else if ( !strncmp( l, "area ", 5 ) )
+     base_cmd = CMD_AREA, l += 5;
+   else if ( !strncmp( l, "a ", 2 ) )
+     base_cmd = CMD_AREA, l += 2;
+   else if ( !strncmp( l, "A", 1 ) )
+     base_cmd = CMD_AREA, l += 1;
+   else if ( !strncmp( l, "map ", 4 ) )
+     base_cmd = CMD_MAP, l += 4;
+   else if ( !strncmp( l, "m ", 2 ) )
+     base_cmd = CMD_MAP, l += 2;
+   else if ( !strncmp( l, "M", 1 ) )
+     base_cmd = CMD_MAP, l += 1;
+   else if ( !strncmp( l, "exit ", 5 ) )
+     base_cmd = CMD_EXIT, l += 5;
+   else if ( !strncmp( l, "ex ", 3 ) )
+     base_cmd = CMD_EXIT, l += 3;
+   else if ( !strncmp( l, "E", 1 ) )
+     base_cmd = CMD_EXIT, l += 1;
+   else
+     base_cmd = CMD_NONE;
+   
+   l = get_string( l, command, 4096 );
+   
+   if ( !command[0] )
+     return 0;
+   
+   for ( i = 0; cmd_table[i].name; i++ )
+     {
+        /* If a normal command, compare it full.
+         * If after a base command, it's okay to abbreviate it.. */
+        if ( base_cmd == cmd_table[i].base_cmd &&
+             ( ( base_cmd != CMD_NONE && !strncmp( command, cmd_table[i].name, strlen( command ) ) ) ||
+               ( base_cmd == CMD_NONE && !strcmp( command, cmd_table[i].name ) ) ) )
+          {
+             (cmd_table[i].func)( l );
+             show_prompt( );
+             return 1;
+          }
+     }
+   
+   /* A little shortcut to 'exit link'. */
+   if ( base_cmd == CMD_EXIT && isdigit( command[0] ) )
+     {
+        do_exit_link( command );
+        show_prompt( );
+        return 1;
+     }
+   if ( base_cmd == CMD_MAP && isdigit( command[0] ) )
+     {
+        do_map( command );
+        show_prompt( );
+        return 1;
+     }
+   
+   if ( !strcmp( cmd, "stop" ) && capture_special_exit )
+     {
+        capture_special_exit = 0;
+        clientfr( "Capturing disabled." );
+        show_prompt( );
+        return 1;
+     }
+   
+   if ( capture_special_exit && !special_exit_nocommand )
+     {
+        strcpy( cse_command, cmd );
+        clientff( C_R "[Command changed to '%s'.]\r\n" C_0, cse_command );
+     }
+   
+   return 0;
+}
+
+
 int i_mapper_process_client_aliases( char *line )
 {
    int i;
-   char command[4096], *l;
-   int base_cmd;
    
    DEBUG( "i_mapper_process_client_aliases" );
    
@@ -9534,94 +9623,13 @@ int i_mapper_process_client_aliases( char *line )
         return 1;
      }
    
-   if ( !strcmp( line, "stop" ) )
+   if ( !strcmp( line, "stop" ) && auto_walk != 0 )
      {
-        if ( auto_walk != 0 )
-          {
-             clientfr( "Okay, I'm frozen." );
-             auto_walk = 0;
-             return 1;
-          }
-        else if ( capture_special_exit )
-          {
-             capture_special_exit = 0;
-             clientfr( "Capturing disabled." );
-             show_prompt( );
-             return 1;
-          }
-     }
-   
-   /* Process from command table. */
-   
-   l = line;
-   
-   /* First, check for compound commands. */
-   if ( !strncmp( l, "room ", 5 ) )
-     base_cmd = CMD_ROOM, l += 5;
-   else if ( !strncmp( l, "r ", 2 ) )
-     base_cmd = CMD_ROOM, l += 2;
-   else if ( !strncmp( l, "R", 1 ) )
-     base_cmd = CMD_ROOM, l += 1;
-   else if ( !strncmp( l, "area ", 5 ) )
-     base_cmd = CMD_AREA, l += 5;
-   else if ( !strncmp( l, "a ", 2 ) )
-     base_cmd = CMD_AREA, l += 2;
-   else if ( !strncmp( l, "A", 1 ) )
-     base_cmd = CMD_AREA, l += 1;
-   else if ( !strncmp( l, "map ", 4 ) )
-     base_cmd = CMD_MAP, l += 4;
-   else if ( !strncmp( l, "m ", 2 ) )
-     base_cmd = CMD_MAP, l += 2;
-   else if ( !strncmp( l, "M", 1 ) )
-     base_cmd = CMD_MAP, l += 1;
-   else if ( !strncmp( l, "exit ", 5 ) )
-     base_cmd = CMD_EXIT, l += 5;
-   else if ( !strncmp( l, "ex ", 3 ) )
-     base_cmd = CMD_EXIT, l += 3;
-   else if ( !strncmp( l, "E", 1 ) )
-     base_cmd = CMD_EXIT, l += 1;
-   else
-     base_cmd = CMD_NONE;
-   
-   l = get_string( l, command, 4096 );
-   
-   if ( !command[0] )
-     return 0;
-   
-   for ( i = 0; cmd_table[i].name; i++ )
-     {
-        /* If a normal command, compare it full.
-         * If after a base command, it's okay to abbreviate it.. */
-        if ( base_cmd == cmd_table[i].base_cmd &&
-             ( ( base_cmd != CMD_NONE && !strncmp( command, cmd_table[i].name, strlen( command ) ) ) ||
-               ( base_cmd == CMD_NONE && !strcmp( command, cmd_table[i].name ) ) ) )
-          {
-             (cmd_table[i].func)( l );
-             show_prompt( );
-             return 1;
-          }
-     }
-   
-   /* A little shortcut to 'exit link'. */
-   if ( base_cmd == CMD_EXIT && isdigit( command[0] ) )
-     {
-        do_exit_link( command );
-        show_prompt( );
-        return 1;
-     }
-   if ( base_cmd == CMD_MAP && isdigit( command[0] ) )
-     {
-        do_map( command );
-        show_prompt( );
+        clientfr( "Okay, I'm frozen." );
+        auto_walk = 0;
         return 1;
      }
    
-   if ( capture_special_exit && !special_exit_nocommand )
-     {
-        strcpy( cse_command, line );
-        clientff( C_R "[Command changed to '%s'.]\r\n" C_0, cse_command );
-     }
-   
-   return 0;
+   return imapper_commands( line );
 }
 

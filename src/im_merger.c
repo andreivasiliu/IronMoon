@@ -20,7 +20,7 @@ ROOM_DATA *get_room( int vnum );
 void mapper_start( );
 void destroy_map( );
 void i_mapper_module_unload( );
-int  i_mapper_process_client_aliases( char *cmd );
+int imapper_commands( const char *cmd );
 int parse_title( const char *line );
 int load_map( const char *file );
 ROOM_DATA *locate_nearby_room( const char *title, int dir );
@@ -54,6 +54,22 @@ void merger_push_room( lua_State *L, ROOM_DATA *room )
         room_udata = (ROOM_DATA**) lua_newuserdata( L, sizeof(ROOM_DATA*) );
         *room_udata = room;
         lua_getfield( L, LUA_REGISTRYINDEX, "merger_room_metatable" );
+        lua_setmetatable( L, -2 );
+     }
+}
+
+
+void merger_push_spexit( lua_State *L, EXIT_DATA *spexit )
+{
+   EXIT_DATA **spexit_udata;
+   
+   if ( !spexit )
+     lua_pushnil( L );
+   else
+     {
+        spexit_udata = (EXIT_DATA**) lua_newuserdata( L, sizeof(EXIT_DATA*) );
+        *spexit_udata = spexit;
+        lua_getfield( L, LUA_REGISTRYINDEX, "merger_spexit_metatable" );
         lua_setmetatable( L, -2 );
      }
 }
@@ -400,6 +416,7 @@ int merger_room_equality( lua_State *L )
 int merger_room_index( lua_State *L )
 {
    ROOM_DATA *room;
+   EXIT_DATA *spexit;
    const char *field;
    
    if ( !lua_isuserdata( L, 1 ) )
@@ -425,6 +442,32 @@ int merger_room_index( lua_State *L )
      {
         lua_pushinteger( L, room->vnum );
      }
+   else if ( !strcmp( field, "underwater" ) )
+     {
+        lua_pushboolean( L, room->underwater );
+     }
+   else if ( !strcmp( field, "pf_next" ) )
+     {
+        merger_push_room( L, room->pf_parent );
+     }
+   else if ( !strcmp( field, "pf_command" ) )
+     {
+        if ( room->pf_direction == 0 || !room->pf_parent )
+          lua_pushnil( L );
+        else if ( room->pf_direction > 0 )
+          lua_pushstring( L, dir_name[room->pf_direction] );
+        else
+          {
+             for ( spexit = room->special_exits; spexit; spexit = spexit->next )
+               if ( spexit->to == room->pf_parent )
+                 break;
+             
+             if ( spexit && spexit->command )
+               lua_pushstring( L, spexit->command );
+             else
+               lua_pushnil( L );
+          }
+     }
    else if ( !strcmp( field, "exits" ) )
      {
         ROOM_DATA **r;
@@ -435,9 +478,60 @@ int merger_room_index( lua_State *L )
         lua_getfield( L, LUA_REGISTRYINDEX, "merger_exits_metatable" );
         lua_setmetatable( L, -2 );
      }
+   else if ( !strcmp( field, "special_exits" ) )
+     {
+        ROOM_DATA **r;
+        
+        r = (ROOM_DATA**) lua_newuserdata( L, sizeof(ROOM_DATA*) );
+        *r = room;
+        
+        lua_getfield( L, LUA_REGISTRYINDEX, "merger_spexits_metatable" );
+        lua_setmetatable( L, -2 );
+     }
+   else if ( !strcmp( field, "area" ) )
+     {
+        AREA_DATA **a;
+        
+        if ( !room->area )
+          lua_pushnil( L );
+        else
+          {
+             a = (AREA_DATA**) lua_newuserdata( L, sizeof(AREA_DATA*) );
+             *a = room->area;
+             
+             lua_getfield( L, LUA_REGISTRYINDEX, "merger_area_metatable" );
+             lua_setmetatable( L, -2 );
+          }
+     }
+   else if ( !strcmp( field, "environment" ) || !strcmp( field, "type" ) )
+     {
+        ROOM_TYPE **t;
+        
+        if ( !room->room_type )
+          lua_pushnil( L );
+        else
+          {
+             t = (ROOM_TYPE**) lua_newuserdata( L, sizeof(ROOM_TYPE*) );
+             *t = room->room_type;
+             
+             lua_getfield( L, LUA_REGISTRYINDEX, "merger_environment_metatable" );
+             lua_setmetatable( L, -2 );
+          }
+     }
    else
      {
-        lua_pushnil( L );
+        int dir;
+        
+        /* room.east; Shortcut to room.exits.east.room. */
+        for ( dir = 1; dir_name[dir]; dir++ )
+          if ( !strcmp( dir_name[dir], field ) ||
+               !strcmp( dir_small_name[dir], field ) )
+            break;
+        
+        if ( dir_name[dir] )
+          merger_push_room( L, room->exits[dir] );
+        else
+          lua_pushnil( L );
      }
    
    return 1;
@@ -591,6 +685,226 @@ int merger_exit_index( lua_State *L )
 }
 
 
+/***
+ ** Special exits interface
+ ***/
+
+int merger_spexits_index( lua_State *L )
+{
+   ROOM_DATA *room;
+   EXIT_DATA *spexit;
+   const char *field;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Indexing non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index a spexits-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   room = *(ROOM_DATA**) lua_touserdata( L, 1 );
+   field = lua_tostring( L, 2 );
+   
+   for ( spexit = room->special_exits; spexit; spexit = spexit->next )
+     if ( spexit->command && !strcmp( field, spexit->command ) )
+       break;
+   
+   merger_push_spexit( L, spexit );
+   
+   return 1;
+}
+
+
+int merger_spexit_index( lua_State *L )
+{
+   EXIT_DATA *spexit;
+   const char *field;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Indexing non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index a spexits-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   spexit = *(EXIT_DATA**) lua_touserdata( L, 1 );
+   field = lua_tostring( L, 2 );
+   
+   if ( !strcmp( field, "command" ) || !strcmp( field, "name" ) )
+     {
+        lua_pushstring( L, spexit->command );
+     }
+   else if ( !strcmp( field, "message" ) )
+     {
+        lua_pushstring( L, spexit->message );
+     }
+   else if ( !strcmp( field, "to" ) || !strcmp( field, "destination" ) )
+     {
+        merger_push_room( L, spexit->to );
+     }
+   else
+     {
+        lua_pushfstring( L, "A special exit has no '%s' property.", field );
+        lua_error( L );
+     }
+   
+   return 1;
+}
+
+
+int merger_spexits_call( lua_State *L )
+{
+   ROOM_DATA *room;
+   EXIT_DATA *spexit;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Calling non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   room = *(ROOM_DATA**) lua_touserdata( L, 1 );
+   
+   /* No arguments: create an iterator. */
+   if ( lua_gettop( L ) == 1 )
+     {
+        /* It needs to return itself (already on the stack),
+         * followed by a state and an initial value. */
+        
+        lua_pushnil( L );
+        lua_pushnil( L );
+        
+        return 3;
+     }
+   
+   if ( lua_gettop( L ) != 3 )
+     {
+        lua_pushstring( L, "Invalid call to a spexits iterator." );
+        lua_error( L );
+     }
+   
+   /* Find out the next direction. */
+   if ( lua_isnil( L, 3 ) )
+     {
+        merger_push_spexit( L, room->special_exits );
+     }
+   else if ( !lua_isuserdata( L, 3 ) )
+     {
+        lua_pushstring( L, "Invalid call to a spexits iterator." );
+        lua_error( L );
+     }
+   else
+     {
+        spexit = *(EXIT_DATA**) lua_touserdata( L, 3 );
+        
+        merger_push_spexit( L, spexit->next );
+     }
+   
+   return 1;
+}
+
+
+/***
+ ** Area tiny-interface
+ ***/
+
+int merger_area_index( lua_State *L )
+{
+   AREA_DATA *area;
+   const char *field;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Indexing non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index an area-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   area = *(AREA_DATA**) lua_touserdata( L, 1 );
+   field = lua_tostring( L, 2 );
+   
+   if ( !strcmp( field, "name" ) )
+     {
+        lua_pushstring( L, area->name );
+     }
+   else
+     {
+        lua_pushnil( L );
+     }
+   
+   return 1;
+}
+
+
+
+/***
+ ** Environment (room type) interface.
+ ***/
+
+int merger_environment_index( lua_State *L )
+{
+   ROOM_TYPE *type;
+   const char *field;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Indexing non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index a type-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   type = *(ROOM_TYPE**) lua_touserdata( L, 1 );
+   field = lua_tostring( L, 2 );
+   
+   if ( !strcmp( field, "name" ) )
+     {
+        lua_pushstring( L, type->name );
+     }
+   else if ( !strcmp( field, "color" ) )
+     {
+        lua_pushstring( L, type->color );
+     }
+   else if ( !strcmp( field, "must_swim" ) )
+     {
+        lua_pushboolean( L, type->must_swim );
+     }
+   else if ( !strcmp( field, "underwater" ) )
+     {
+        lua_pushboolean( L, type->underwater );
+     }
+   else if ( !strcmp( field, "avoid" ) )
+     {
+        lua_pushboolean( L, type->avoid );
+     }
+   else
+     lua_pushnil( L );
+   
+   return 1;
+}
+
+
+
+
 /***                               ***                               ***/
 /** Merger API. This should be the only thing visible to the outside. **/
 /***                               ***                               ***/
@@ -611,7 +925,7 @@ void merger_unload( )
 
 int merger_client_input( char *cmd )
 {
-   return i_mapper_process_client_aliases( cmd );
+   return imapper_commands( cmd );
 }
 
 
@@ -622,7 +936,6 @@ void merger_open_api( lua_State *L )
    
    /* Create the metatable for it. */
    lua_newtable( L );
-   
    lua_pushcfunction( L, merger_map_index );
    lua_setfield( L, -2, "__index" );
    lua_pushcfunction( L, merger_map_newindex );
@@ -637,17 +950,14 @@ void merger_open_api( lua_State *L )
    
    /* Create the metatable for it. */
    lua_newtable( L );
-   
    lua_pushcfunction( L, merger_rooms_index );
    lua_setfield( L, -2, "__index" );
    
    lua_setmetatable( L, -2 );
-   
    lua_setglobal( L, "rooms" );
    
    /* Create the room metatable, and store it for later use. */
    lua_newtable( L );
-   
    lua_pushcfunction( L, merger_room_index );
    lua_setfield( L, -2, "__index" );
    lua_pushcfunction( L, merger_room_equality );
@@ -657,7 +967,6 @@ void merger_open_api( lua_State *L )
    
    /* Create the exits metatable. */
    lua_newtable( L );
-   
    lua_pushcfunction( L, merger_exits_index );
    lua_setfield( L, -2, "__index" );
    lua_pushcfunction( L, merger_exits_call );
@@ -667,10 +976,39 @@ void merger_open_api( lua_State *L )
    
    /* Create the exit metatable. */
    lua_newtable( L );
-   
    lua_pushcfunction( L, merger_exit_index );
    lua_setfield( L, -2, "__index" );
    
    lua_setfield( L, LUA_REGISTRYINDEX, "merger_exit_metatable" );
+   
+   /* Create the special exits metatable. */
+   lua_newtable( L );
+   lua_pushcfunction( L, merger_spexits_index );
+   lua_setfield( L, -2, "__index" );
+   lua_pushcfunction( L, merger_spexits_call );
+   lua_setfield( L, -2, "__call" );
+   
+   lua_setfield( L, LUA_REGISTRYINDEX, "merger_spexits_metatable" );
+   
+   /* Create the special exit metatable. */
+   lua_newtable( L );
+   lua_pushcfunction( L, merger_spexit_index );
+   lua_setfield( L, -2, "__index" );
+   
+   lua_setfield( L, LUA_REGISTRYINDEX, "merger_spexit_metatable" );
+   
+   /* Create area metatable. */
+   lua_newtable( L );
+   lua_pushcfunction( L, merger_area_index );
+   lua_setfield( L, -2, "__index" );
+   
+   lua_setfield( L, LUA_REGISTRYINDEX, "merger_area_metatable" );
+   
+   /* Create environment metatable. */
+   lua_newtable( L );
+   lua_pushcfunction( L, merger_environment_index );
+   lua_setfield( L, -2, "__index" );
+   
+   lua_setfield( L, LUA_REGISTRYINDEX, "merger_environment_metatable" );
 }
 

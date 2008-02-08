@@ -88,8 +88,6 @@ struct room_data
    ROOM_DATA *next_in_area;
    ROOM_DATA *next_in_hash;
    
-   int next_direction;
-   
    /* NULL, N, NE, E, SE, S, SW, W, NW, UP, DOWN, IN, OUT */
    ROOM_DATA *exits[13];
    
@@ -192,7 +190,7 @@ struct function_data
 {
    char *name;
    
-   void (*func)( char *arg );
+   void (*func)( const char *arg );
    
    int base_cmd;
 };

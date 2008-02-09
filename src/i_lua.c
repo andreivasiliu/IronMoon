@@ -48,6 +48,7 @@ static LINES *current_paragraph;
 void ilua_open_mbapi( lua_State *L );
 void ilua_open_mbcolours( lua_State *L );
 void read_ilua_config( char *file_name, char *mod_name );
+int open_ilua_module( char *name );
 
 #define ILUA_PREF C_R "[" C_W "ILua" C_R "]: "
 
@@ -78,11 +79,24 @@ ENTRANCE( i_lua_module_register )
 
 void i_lua_init_data( )
 {
-   void merger_init( );
+   CONFIG_ELEMENT *cfg;
    
-   merger_init( );
+     {
+        void merger_init( );
+        merger_init( );
+     }
    
-   read_ilua_config( "config.ilua.txt", NULL );
+   /* Load all modules. */
+   cfg = config_getlist( "config.ilua_modules" );
+   for ( ; cfg; cfg = cfg->next )
+     {
+        if ( cfg->is_list && cfg->key )
+          {
+             get_timer( );
+             open_ilua_module( cfg->key );
+             debugf( "Loaded '%s'. (%d usec)", cfg->key, get_timer( ) );
+          }
+     }
 }
 
 
@@ -151,6 +165,135 @@ void close_ilua_module( ILUA_MOD *module )
      free( module->work_dir );
    
    free( module );
+}
+
+
+
+int open_ilua_module( char *name )
+{
+   lua_State *L;
+   ILUA_MOD *mod, *mod_next;
+   CONFIG_ELEMENT *cfg, *mod_cfg;
+   char full_path[4096], current_work_dir[4096];
+   const char *truename, *errmsg;
+   int err = 0;
+   
+   for ( mod = ilua_modules; mod; mod = mod_next )
+     {
+        mod_next = mod->next;
+        if ( !strcmp( mod->name, name ) )
+          {
+             debugf( "Unloading current '%s' module.", mod->name );
+             close_ilua_module( mod );
+          }
+     }
+   
+   cfg = config_getlist( "config.ilua_modules" );
+   for ( ; cfg; cfg = cfg->next )
+     if ( !strcmp( cfg->key, name ) )
+       break;
+   
+   if ( !cfg || !cfg->is_list )
+     {
+        debugf( "Module '%s' wasn't found in the configuration.", name );
+        return 0;
+     }
+   
+   truename = cfg->key;
+   mod_cfg = cfg->first;
+   
+   /* See if it wants a different directory. */
+   for ( cfg = mod_cfg; cfg; cfg = cfg->next )
+     if ( cfg->key && !strcmp( cfg->key, "dir" ) )
+       break;
+   
+   if ( cfg && !cfg->is_list )
+     {
+        getcwd( current_work_dir, 4096 );
+        if ( chdir( cfg->value ) )
+          {
+             debugf( "%s (ILua): %s: %s", truename, cfg->value,
+                     strerror( errno ) );
+             return 0;
+          }
+     }
+   
+   /* Create a shiny, brand new module. */
+   if ( !ilua_modules )
+     {
+        mod = calloc( 1, sizeof( ILUA_MOD ) );
+        ilua_modules = mod;
+     }
+   else
+     {
+        mod = ilua_modules;
+        while ( mod->next )
+          mod = mod->next;
+        mod->next = calloc( 1, sizeof( ILUA_MOD ) );
+        mod = mod->next;
+     }
+   
+   mod->name = strdup( truename );
+   if ( cfg )
+     {
+        /* The given path may be relative. Don't store that one. */
+        getcwd( full_path, 4096 );
+        mod->work_dir = strdup( full_path );
+     }
+   
+   /* Initialize it. */
+   L = luaL_newstate( );
+   mod->L = L;
+   
+   luaL_openlibs( L );
+   ilua_open_mbapi( L );
+   ilua_open_mbcolours( L );
+   /* From im_merger.c */
+     {
+        void merger_open_api( lua_State *L );
+        merger_open_api( L );
+     }
+   
+   /* This is used to show a stacktrace, in case of an error. */
+   lua_pushcfunction( L, ilua_errorhandler );
+   
+   /* Start loading its files. */
+   for ( cfg = mod_cfg; cfg; cfg = cfg->next )
+     {
+        if ( cfg->is_list || cfg->key )
+          continue;
+        
+        err = luaL_loadfile( L, cfg->value ) || lua_pcall( L, 0, 0, -2 );
+        
+        if ( err )
+          break;
+     }
+   
+   /* The error handler. */
+   lua_remove( L, 1 );
+   
+   if ( err )
+     {
+        errmsg = lua_tostring( L, -1 );
+        if ( errmsg )
+          {
+             debugf( "%s: %s", cfg->value, errmsg );
+             clientff( ILUA_PREF "%s: %s\r\n" C_0, cfg->value, errmsg );
+          }
+        
+        lua_pop( L, 1 );
+        
+        if ( mod->work_dir )
+          chdir( current_work_dir );
+        close_ilua_module( mod );
+        
+        return 0;
+     }
+   
+   if ( mod->work_dir )
+     chdir( current_work_dir );
+   
+   return 1;
 }
 
 
@@ -618,9 +761,15 @@ int i_lua_process_client_command( char *cmd )
              close_ilua_module( mod );
           }
      }
-   else if ( !strcmp( buf, "load" ) || !strcmp( buf, "reload" ) )
+   else if ( !strcmp( buf, "load" ) || !strcmp( buf, "reload" ) ||
+             !strcmp( buf, "laod" ) )
      {
+        CONFIG_ELEMENT *cfg;
         ILUA_MOD *mod_next;
+        
+        /* Common mistype. */
+        if ( !strcmp( buf, "laod" ) )
+          clientfr( "I'll assume you meant 'load'. Learn to type please." );
         
         get_string( p, buf, 4096 );
         
@@ -636,23 +785,30 @@ int i_lua_process_client_command( char *cmd )
              
              if ( !strcmp( buf, "all" ) || !strcmp( mod->name, buf ) )
                {
-                  clientff( C_R "[Unloading current '%s' module.]\r\n" C_0,
+                  clientff( "Unloading current '%s' module.\r\n",
                             mod->name );
                   ilua_callback( mod->L, "unload", NULL, mod->work_dir );
                   close_ilua_module( mod );
                }
           }
         
-        if ( !strcmp( buf, "all" ) )
-          {
-             clientff( C_R "[Loading all modules]\r\n" C_0 );
-             read_ilua_config( "config.ilua.txt", NULL );
-          }
-        else
-          {
-             clientff( C_R "[Loading '%s'.]\r\n" C_0, buf );
-             read_ilua_config( "config.ilua.txt", buf );
-          }
+        cfg = config_getlist( "config.ilua_modules" );
+        for ( ; cfg; cfg = cfg->next )
+          if ( cfg->is_list && cfg->key )
+            if ( !strcmp( buf, "all" ) || !strcmp( buf, cfg->key ) )
+              {
+                 clientff( "Loading '%s' module... " C_0, cfg->key );
+                 get_timer( );
+                 if ( open_ilua_module( cfg->key ) )
+                   clientff( "done. (%d usec)\r\n",
+                             get_timer( ) );
+                 else
+                   clientff( "Module unloaded.\r\n" );
+                 break;
+              }
+        
+        if ( !cfg && strcmp( buf, "all" ) )
+          clientfr( "Careful with spelling and capitalization. That module doesn't exist." );
      }
    else
      {
@@ -1285,6 +1441,198 @@ static int ilua_regex_match( lua_State *L )
 }
 
 
+int ilua_load_config( lua_State *L )
+{
+   const char *section, *file;
+   
+   section = luaL_checkstring( L, 1 );
+   file = luaL_checkstring( L, 2 );
+   
+   if ( read_config( section, file ) )
+     lua_pushnil( L );
+   else
+     lua_pushboolean( L, 1 );
+   
+   return 1;
+}
+
+
+int ilua_save_config( lua_State *L )
+{
+   const char *section, *file;
+   
+   section = luaL_checkstring( L, 1 );
+   file = luaL_checkstring( L, 2 );
+   
+   save_config( section, file );
+   
+   return 0;
+}
+
+
+void ilua_push_config( lua_State *L, CONFIG_ELEMENT *config )
+{
+   CONFIG_ELEMENT **c;
+   
+   if ( !config )
+     lua_pushnil( L );
+   else
+     {
+        c = (CONFIG_ELEMENT**) lua_newuserdata( L, sizeof(CONFIG_ELEMENT *) );
+        
+        *c = config;
+        
+        lua_getfield( L, LUA_REGISTRYINDEX, "ilua_config_metatable" );
+        lua_setmetatable( L, -2 );
+     }
+}
+
+
+
+int ilua_get_config( lua_State *L )
+{
+   CONFIG_ELEMENT *config;
+   const char *section;
+   
+   section = luaL_checkstring( L, 1 );
+   
+   /* For safety. */
+   if ( strstr( section, "." ) )
+     {
+        lua_pushstring( L, "Only a global section is allowed." );
+        lua_error( L );
+     }
+   
+   config = config_getsection( section );
+   
+   ilua_push_config( L, config );
+   
+   return 1;
+}
+
+
+int ilua_config_index( lua_State *L )
+{
+   CONFIG_ELEMENT *parent, *cfg;
+   const char *field;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Indexing non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index a config-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   parent = *(CONFIG_ELEMENT **) lua_touserdata( L, 1 );
+   field = lua_tostring( L, 2 );
+   
+   if ( !parent->is_list )
+     {
+        lua_pushstring( L, "Type of config element changed into non-list!" );
+        lua_error( L );
+     }
+   
+   for ( cfg = parent->first; cfg; cfg = cfg->next )
+     if ( cfg->key && !strcmp( cfg->key, field ) )
+       break;
+   
+   if ( !cfg || ( !cfg->is_list && !cfg->value ) )
+     lua_pushnil( L );
+   else if ( !cfg->is_list )
+     lua_pushstring( L, cfg->value );
+   else
+     ilua_push_config( L, cfg );
+   
+   return 1;
+}
+
+
+int ilua_config_newindex( lua_State *L )
+{
+   CONFIG_ELEMENT *parent, *cfg;
+   const char *field;
+   
+   if ( !lua_isuserdata( L, 1 ) )
+     {
+        lua_pushstring( L, "Indexing non-userdata. Internal error!" );
+        lua_error( L );
+     }
+   
+   if ( !lua_isstring( L, 2 ) )
+     {
+        lua_pushstring( L, "Cannot index a config-userdata with a non-string." );
+        lua_error( L );
+     }
+   
+   parent = *(CONFIG_ELEMENT **) lua_touserdata( L, 1 );
+   field = lua_tostring( L, 2 );
+   
+   /* Clear the current one, should it exist. */
+   for ( cfg = parent->first; cfg; cfg = cfg->next )
+     if ( cfg->key && !strcmp( cfg->key, field ) )
+       {
+          if ( cfg->is_list )
+            destroy_config_list( cfg->first );
+          else if ( cfg->value )
+            free( cfg->value );
+          
+          break;
+       }
+   
+   if ( cfg )
+     {
+        cfg->first = cfg->last = NULL;
+        cfg->value = NULL;
+     }
+   else
+     {
+        cfg = calloc( 1, sizeof( CONFIG_ELEMENT ) );
+        
+        cfg->key = strdup( field );
+        
+        if ( !parent->last )
+          parent->first = parent->last = cfg;
+        else
+          {
+             parent->last->next = cfg;
+             parent->last = cfg;
+          }
+     }
+   
+   if ( lua_isnil( L, 3 ) )
+     {
+        cfg->is_list = 0;
+        cfg->value = NULL;
+     }
+   else if ( lua_isstring( L, 3 ) )
+     {
+        cfg->is_list = 0;
+        cfg->value = strdup( lua_tostring( L, 3 ) );
+     }
+   else if ( lua_istable( L, 3 ) )
+     {
+        // ToDo.
+        // 
+     }
+   else
+     {
+        cfg->is_list = 0;
+        cfg->value = NULL;
+        
+        lua_pushstring( L, "Invalid assignment to a config userdata." );
+        lua_error( L );
+     }
+   
+   return 0;
+}
+
+
+
 /*
  * mb =
  * {
@@ -1358,6 +1706,17 @@ void ilua_open_mbapi( lua_State *L )
    lua_register( L, "gettimeofday", ilua_gettimeofday );
    lua_register( L, "regex_compile", ilua_regex_compile );
    lua_register( L, "regex_match", ilua_regex_match );
+   lua_register( L, "load_config", ilua_load_config );
+   lua_register( L, "save_config", ilua_save_config );
+   lua_register( L, "get_config", ilua_get_config );
+   
+   /* Store a metatable for our config objects. */
+   lua_newtable( L );
+   lua_pushcfunction( L, ilua_config_index );
+   lua_setfield( L, -2, "__index" );
+   lua_pushcfunction( L, ilua_config_newindex );
+   lua_setfield( L, -2, "__newindex" );
+   lua_setfield( L, LUA_REGISTRYINDEX, "ilua_config_metatable" );
 }
 
 

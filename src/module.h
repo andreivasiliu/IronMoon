@@ -90,13 +90,15 @@ int c_write( int fd, const void *buf, size_t count );
 int c_close( int fd );
 
 /* Config */
-CONFIG_ELEMENT *config_getlist( char *varpath );
-const char *config_getvalue( char *varpath );
-void config_delitem( char *varpath );
-void config_setdescription( char *varpath, char *description );
-void config_setvalue( char *varpath, char *value );
-void config_addvalue( char *varpath, char *value );
-void config_setlist( char *varpath );
+CONFIG_ELEMENT *config_getlist( const char *varpath );
+CONFIG_ELEMENT *config_getsection( const char *section );
+const char *config_getvalue( const char *varpath );
+void config_delitem( const char *varpath );
+void config_setdescription( const char *varpath, const char *description );
+void config_setvalue( const char *varpath, const char *value );
+void config_addvalue( const char *varpath, const char *value );
+void config_setlist( const char *varpath );
 int read_config( const char *section, const char *file );
 void save_config( const char *section, const char *file );
+void destroy_config_list( CONFIG_ELEMENT *first );
 

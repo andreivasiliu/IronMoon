@@ -5323,8 +5323,8 @@ CONFIG_ELEMENT *new_config_element( char *key, CONFIG_ELEMENT *list )
 
 
 
-void set_config_value( char *key, char *value, CONFIG_ELEMENT *list,
-                       char *description )
+void set_config_value( char *key, char *value,
+                       CONFIG_ELEMENT *list, char *description )
 {
    CONFIG_ELEMENT *element = NULL;
    
@@ -5824,10 +5824,10 @@ void save_config( const char *section, const char *file )
 }
 
 
-CONFIG_ELEMENT *get_config_path( char *varpath, int create )
+CONFIG_ELEMENT *get_config_path( const char *varpath, int create )
 {
    CONFIG_ELEMENT *elem = NULL, *list;
-   char *p;
+   const char *p;
    
    p = varpath;
    while ( *p && *p != '.' )
@@ -5934,7 +5934,7 @@ CONFIG_ELEMENT *get_config_path( char *varpath, int create )
 
 
 
-CONFIG_ELEMENT *config_getlist( char *varpath )
+CONFIG_ELEMENT *config_getlist( const char *varpath )
 {
    CONFIG_ELEMENT *elem;
    
@@ -5946,7 +5946,21 @@ CONFIG_ELEMENT *config_getlist( char *varpath )
    return elem->first;
 }
 
-const char *config_getvalue( char *varpath )
+
+CONFIG_ELEMENT *config_getsection( const char *section )
+{
+   CONFIG_ELEMENT *elem;
+   
+   if ( strstr( section, "." ) )
+     return NULL;
+   
+   elem = get_config_path( section, 0 );
+   
+   return elem;
+}
+   
+
+const char *config_getvalue( const char *varpath )
 {
    CONFIG_ELEMENT *elem;
    
@@ -5958,14 +5972,14 @@ const char *config_getvalue( char *varpath )
    return elem->value;
 }
 
-void config_delitem( char *varpath )
+void config_delitem( const char *varpath )
 {
-   
+   // FIXME!.. actually, do we really need it?
    
    
 }
 
-void config_setdescription( char *varpath, char *description )
+void config_setdescription( const char *varpath, const char *description )
 {
    CONFIG_ELEMENT *elem;
    
@@ -5981,7 +5995,7 @@ void config_setdescription( char *varpath, char *description )
 }
 
 
-void config_setvalue( char *varpath, char *value )
+void config_setvalue( const char *varpath, const char *value )
 {
    CONFIG_ELEMENT *elem;
    
@@ -6006,9 +6020,10 @@ void config_setvalue( char *varpath, char *value )
      elem->value = strdup( value );
 }
 
-void config_addvalue( char *varpath, char *value )
+void config_addvalue( const char *varpath, const char *value )
 {
    CONFIG_ELEMENT *elem;
+   char *v;
    
    elem = get_config_path( varpath, 2 );
    
@@ -6024,12 +6039,14 @@ void config_addvalue( char *varpath, char *value )
      }
    
    if ( !strcmp( value, "none" ) )
-     value = NULL;
-   
-   set_config_value( NULL, value, elem, NULL );
+     v = NULL;
+   else
+     v = strdup( value );
+
+   set_config_value( NULL, v, elem, NULL );
 }
 
-void config_setlist( char *varpath )
+void config_setlist( const char *varpath )
 {
    CONFIG_ELEMENT *elem;
    

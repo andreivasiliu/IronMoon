@@ -1375,28 +1375,34 @@ void log_bytes( char *type, char *string, int bytes )
    *(b++) = ' ';
    *(b++) = '\'';
    
-   s = string;
-   
    while ( i < bytes )
      {
-	if ( ( string[i] >= 'a' && string[i] <= 'z' ) ||
-	     ( string[i] >= 'A' && string[i] <= 'Z' ) ||
-	     ( string[i] >= '0' && string[i] <= '9' ) ||
-	     string[i] == ' ' || string[i] == '.' ||
-	     string[i] == ',' || string[i] == ':' ||
-	     string[i] == '(' || string[i] == ')' )
-	  {
-	     *(b++) = string[i++];
-	  }
-	else
-	  {
-	     *(b++) = '[';
-	     sprintf( buf2, "%d", (int) string[i++] );
-	     s = buf2;
-	     while ( *s )
-	       *(b++) = *(s++);
-	     *(b++) = ']';
-	  }
+        // Show printable characters as they are, except '[' and ']'.
+        // For the rest, show the ascii code between square brackets.
+        if ( string[i] >= 32 && string[i] <= 126 &&
+             string[i] != '[' && string[i] != ']' )
+          {
+             *(b++) = string[i++];
+          }
+        else
+          {
+             if ( string[i] == '\n' )
+               s = "[\\n]";
+             else if ( string[i] == '\r' )
+               s = "[\\r]";
+             else if ( string[i] == '\33' )
+               s = "[\\e]";
+             else
+               {
+                  sprintf( buf2, "[%d]", (int) string[i] );
+                  s = buf2;
+               }
+             
+             while ( *s )
+               *(b++) = *(s++);
+              
+              i++;
+          }
      }
    
    *(b++) = '\'';

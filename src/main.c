@@ -3854,7 +3854,7 @@ void print_paragraph( LINES *l )
         
         for ( c = 0; c <= l->len[line]; c++ )
           {
-             /* Raw, then colour, then inline, then normal. */
+             /* Raw, then colour, then inline, then zcode, then normal. */
              while ( !l->insert_point[raw_pos] )
                ADD_CHAR( l->raw[raw_pos++] );
              
@@ -3870,6 +3870,24 @@ void print_paragraph( LINES *l )
                   if ( p )
                     while ( *p )
                       ADD_CHAR( *(p++) );
+               }
+             
+             if ( l->mxp_z_code[normal_pos] != -1 )
+               {
+                  /* MXP escape codes should only have at most two digits. */
+                  /* Example: \33[1z */
+                  char z_number = l->mxp_z_code[normal_pos];
+                  char z_digit1 = z_number / 10;
+                  char z_digit2 = z_number % 10;
+                  
+                  ADD_CHAR( '\33' );
+                  ADD_CHAR( '[' );
+                  
+                  if ( z_digit1 )
+                    ADD_CHAR( z_digit1 + '0' );
+                  ADD_CHAR( z_digit2 + '0' );
+                  
+                  ADD_CHAR( 'z' );
                }
              
              /* At the end, before \n or IAC-GA, put the suffix. */
@@ -3953,7 +3971,7 @@ inline int inside_escapesequence( char c )
    
    if ( inside )
      {
-        if ( c == 'm' )
+        if ( c == 'm' || c == 'z' )
           {
              int len = inside + 1;
              
@@ -4081,6 +4099,8 @@ void process_buffer( char *raw_buffer, int bytes )
                                            normal_buffer_size );
              l.zeroed_lines     = realloc( l.zeroed_lines,
                                            normal_buffer_size );
+             l.mxp_z_code       = realloc( l.mxp_z_code,
+                                           normal_buffer_size );
              l.colour           = realloc( l.colour,
                                            normal_buffer_size * sizeof(char*));
              l.inlines          = realloc( l.inlines,
@@ -4088,6 +4108,8 @@ void process_buffer( char *raw_buffer, int bytes )
              l.gag_char         = realloc( l.gag_char,
                                            normal_buffer_size * sizeof(short));
              
+             memset( l.mxp_z_code + normal_buffer_size - 4096, -1,
+                     4096 * sizeof(char) );
              memset( l.colour + normal_buffer_size - 4096, 0,
                      4096 * sizeof(char*) );
              memset( l.inlines + normal_buffer_size - 4096, 0,
@@ -4124,57 +4146,74 @@ void process_buffer( char *raw_buffer, int bytes )
         
         if ( es || ts )
           {
-             /* Colourful! */
              if ( es && es != -1 )
                {
-                  char *p = l.raw + raw_pos - es + 1;
-                  
-                  char *colour_list[2][8] =
-                    { { C_d, C_r, C_g, C_y, C_b, C_m, C_c, C_0 },
-                      { C_D, C_R, C_G, C_Y, C_B, C_M, C_C, C_W } };
-                  
-                  /* Determine which colour it is. */
-                  
-                  /* Skip "\33[" first. A colour looks like: \33[1;31m */
-                  p += 2;
-                  while ( *p )
+                  /* Colourful! */
+                  if ( l.raw[raw_pos] == 'm' )
                     {
-                       if ( *p == '0' )
+                       char *p = l.raw + raw_pos - es + 1;
+                       
+                       char *colour_list[2][8] =
+                        { { C_d, C_r, C_g, C_y, C_b, C_m, C_c, C_0 },
+                          { C_D, C_R, C_G, C_Y, C_B, C_M, C_C, C_W } };
+                       
+                       /* Determine which colour it is. */
+                       
+                       /* Skip "\33[" first. A colour looks like: \33[1;31m */
+                       p += 2;
+                       while ( *p )
                          {
-                            colour_is_bright = 0;
-                            foreground_colour = 0;
-                         }
-                       else if ( *p == '1' )
-                         colour_is_bright = 1;
-                       else if ( *p == '3' )
-                         {
+                            if ( *p == '0' )
+                              {
+                                 colour_is_bright = 0;
+                                 foreground_colour = 0;
+                              }
+                            else if ( *p == '1' )
+                              colour_is_bright = 1;
+                            else if ( *p == '3' )
+                              {
+                                 p++;
+                                 foreground_colour = *p - '0';
+                              }
+                            
                             p++;
-                            foreground_colour = *p - '0';
+                            if ( *p == ';' )
+                              {
+                                 p++;
+                                 continue;
+                              }
+                            else
+                              break;
                          }
                        
-                       p++;
-                       if ( *p == ';' )
-                         {
-                            p++;
-                            continue;
-                         }
-                       else
-                         break;
+                       l.colour[normal_pos] =
+                         colour_list[colour_is_bright][foreground_colour];
+                       
+                       raw_pos -= es;
                     }
-                  
-                  l.colour[normal_pos] =
-                    colour_list[colour_is_bright][foreground_colour];
-                  
-                  /*
-                  for ( i = 0; colour_list[i]; i++ )
-                    if ( !memcmp( p, colour_list[i], strlen( colour_list[i] ) ) )
-                      {
-                         l.colour[normal_pos] = colour_list[i];
-                         
-                         raw_pos -= es;
-                         
-                         break;
-                      }*/
+                  /* An MXP marker? */
+                  else if ( l.raw[raw_pos] == 'z' )
+                    {
+                       /* An MXP escape sequence looks like this: \33[11z */
+                       /* We need the number before the 'z'. */
+                       
+                       char *p = l.raw + raw_pos - es + 1;
+                       int z_number = 0;
+                       p += 2;
+                       
+                       while ( isdigit( *p ) )
+                         {
+                            z_number *= 10;
+                            z_number += *p - '0';
+                         }
+                       
+                       /* Store it for later use. */
+                       l.mxp_z_code[normal_pos] = z_number;
+                       
+                       raw_pos -= es;
+                    }
+                  else
+                    debugf("Unknown escape code; it ends with '%c'.", l.raw[raw_pos]);
                }
              
              if ( ts && ts != -1 )

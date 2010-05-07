@@ -27,9 +27,14 @@ endif
 
 all: $(BIN)
 
+clean:
+	rm -f ${ODIR}/*.o ${ODIR}/*.res
+	rm -f $(BIN)
+
 
 # Extra dependencies
 ${ODIR}/i_mapper.o: ${SDIR}/i_mapper.h
+${ODIR}/%.res: ${SDIR}/mc-core.ico ${SDIR}/mb-mod.ico
 
 
 $(BIN): $(OBJ)

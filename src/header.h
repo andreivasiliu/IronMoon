@@ -238,6 +238,7 @@ struct lines_data
    /* --- */
    
    short *gag_char;
+   char *mxp_z_code;
    char **inlines;
    
    struct line_info_data

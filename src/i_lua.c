@@ -321,13 +321,13 @@ void read_ilua_config( char *file_name, char *mod_name )
         fprintf( fl, "# ILua configuration file.\n\n" );
         
         fprintf( fl, "# This file is sectioned in modules. Each module has its own globals, and\n"
-		 "# modules cannot communicate between them. A module may load any number of\n"
-		 "# Lua script files.\n\n");
+                 "# modules cannot communicate between them. A module may load any number of\n"
+                 "# Lua script files.\n\n");
         
-	fprintf( fl, "# Example of an ILua module:\n\n" );
-	fprintf( fl, "#module \"Foo\"\n"
-		 "#load \"example1.lua\"\n"
-		 "#load \"example2.lua\"\n\n" );
+        fprintf( fl, "# Example of an ILua module:\n\n" );
+        fprintf( fl, "#module \"Foo\"\n"
+                 "#load \"example1.lua\"\n"
+                 "#load \"example2.lua\"\n\n" );
         
         fclose( fl );
      }
@@ -488,27 +488,27 @@ void set_lines_in_table( lua_State *L, LINES *l )
    lua_newtable( L );
    for ( i = 1; i <= l->nr_of_lines; i++ )
      {
-	lua_pushnumber( L, i );
-	lua_pushstring( L, l->line[i] );
-	lua_settable( L, -3 );
+        lua_pushnumber( L, i );
+        lua_pushstring( L, l->line[i] );
+        lua_settable( L, -3 );
      }
    lua_setfield( L, -2, "lines" );
    
    lua_newtable( L );
    for ( i = 1; i <= l->nr_of_lines; i++ )
      {
-	lua_pushnumber( L, i );
-	lua_pushnumber( L, l->len[i] );
-	lua_settable( L, -3 );
+        lua_pushnumber( L, i );
+        lua_pushnumber( L, l->len[i] );
+        lua_settable( L, -3 );
      }
    lua_setfield( L, -2, "line_len" );
    
    lua_newtable( L );
    for ( i = 1; i <= l->nr_of_lines; i++ )
      {
-	lua_pushnumber( L, i );
-	lua_pushnumber( L, l->line_start[i] );
-	lua_settable( L, -3 );
+        lua_pushnumber( L, i );
+        lua_pushnumber( L, l->line_start[i] );
+        lua_settable( L, -3 );
      }
    lua_setfield( L, -2, "line_start" );
    
@@ -685,9 +685,9 @@ void i_lua_process_server_paragraph( LINES *l )
    
    for ( m = ilua_modules; m; m = m->next )
      {
-	set_lines_in_table( m->L, l );
-	set_atcp_table( m->L );
-	ilua_callback( m->L, "server_lines", NULL, m->work_dir );
+        set_lines_in_table( m->L, l );
+        set_atcp_table( m->L );
+        ilua_callback( m->L, "server_lines", NULL, m->work_dir );
      }
    
    current_paragraph = NULL;
@@ -872,17 +872,17 @@ static int ilua_debug( lua_State *L )
 
 
 void paragraph_manip( lua_State *L,
-		     void (*func_at)( int line, char *string ),
-		     void (*func)( char *string ) )
+                     void (*func_at)( int line, char *string ),
+                     void (*func)( char *string ) )
 {
    char *str;
    int line = 0, use_line = 0;
    
    if ( lua_isnumber( L, 1 ) )
      {
-	line = lua_tonumber( L, 1 );
-	lua_remove( L, 1 );
-	use_line = 1;
+        line = lua_tonumber( L, 1 );
+        lua_remove( L, 1 );
+        use_line = 1;
      }
    
    lua_concat( L, lua_gettop( L ) );
@@ -890,10 +890,10 @@ void paragraph_manip( lua_State *L,
    str = (char*) lua_tostring( L, -1 );
    if ( str )
      {
-	if ( use_line )
-	  func_at( line, str );
-	else
-	  func( str );
+        if ( use_line )
+          func_at( line, str );
+        else
+          func( str );
      }
    lua_pop( L, 1 );
 }
@@ -926,9 +926,9 @@ static int ilua_insert( lua_State *L )
    
    if ( lua_isnumber( L, 2 ) )
      {
-	line = luaL_checkint( L, 1 );
-	use_line = 1;
-	lua_remove( L, 1 );
+        line = luaL_checkint( L, 1 );
+        use_line = 1;
+        lua_remove( L, 1 );
      }
    
    pos = luaL_checkint( L, 1 );
@@ -938,10 +938,10 @@ static int ilua_insert( lua_State *L )
    str = lua_tostring( L, -1 );
    if ( str )
      {
-	if ( use_line )
-	  insert_at( line, pos, (char*) str );
-	else
-	  insert( pos, (char*) str );
+        if ( use_line )
+          insert_at( line, pos, (char*) str );
+        else
+          insert( pos, (char*) str );
      }
    
    lua_pop( L, 2 );
@@ -977,14 +977,14 @@ static int ilua_get_color_at( lua_State *L )
    
    if ( !current_paragraph )
      {
-	lua_pushstring( L, "get_color_at() called at a wrong time." );
-	lua_error( L );
+        lua_pushstring( L, "get_color_at() called at a wrong time." );
+        lua_error( L );
      }
    
    if ( lua_isnumber( L, 2 ) )
      {
-	line = luaL_checkint( L, 1 );
-	use_line = 1;
+        line = luaL_checkint( L, 1 );
+        use_line = 1;
      }
    
    pos = luaL_checkint( L, 1 + use_line );
@@ -1006,12 +1006,12 @@ static int ilua_hide_line( lua_State *L )
 {
    if ( lua_isnumber( L, 1 ) )
      {
-	int line;
-	
-	line = lua_tonumber( L, 1 );
-	hide_line_at( line );
-	
-	lua_remove( L, 1 );
+        int line;
+        
+        line = lua_tonumber( L, 1 );
+        hide_line_at( line );
+        
+        lua_remove( L, 1 );
      }
    else
      hide_line( );
@@ -1040,25 +1040,25 @@ static int ilua_set_line( lua_State *L )
    
    if ( line == -1 )
      {
-	lua_getfield( L, -1, "prompt" );
-	lua_setfield( L, -2, "line" );
-	
-	lua_getfield( L, -1, "prompt_len" );
-	lua_setfield( L, -2, "len" );
+        lua_getfield( L, -1, "prompt" );
+        lua_setfield( L, -2, "line" );
+        
+        lua_getfield( L, -1, "prompt_len" );
+        lua_setfield( L, -2, "len" );
      }
    else
      {
-	lua_getfield( L, -1, "lines" );
-	lua_pushnumber( L, line );
-	lua_gettable( L, -2 );
-	lua_setfield( L, -3, "line" );
-	lua_pop( L, 1 );
-	
-	lua_getfield( L, -1, "line_len" );
-	lua_pushnumber( L, line );
-	lua_gettable( L, -2 );
-	lua_setfield( L, -3, "len" );
-	lua_pop( L, 1 );
+        lua_getfield( L, -1, "lines" );
+        lua_pushnumber( L, line );
+        lua_gettable( L, -2 );
+        lua_setfield( L, -3, "line" );
+        lua_pop( L, 1 );
+        
+        lua_getfield( L, -1, "line_len" );
+        lua_pushnumber( L, line );
+        lua_gettable( L, -2 );
+        lua_setfield( L, -3, "len" );
+        lua_pop( L, 1 );
      }
    
    lua_pushnumber( L, line );
@@ -1277,14 +1277,14 @@ static int ilua_regex_compile( lua_State *L )
    
    if ( error )
      {
-	char buf[256];
-	
-	sprintf( buf, "Cannot compile regular expression, at character "
-		 "%d.\nReason: %s.\nPattern was: '%s'",
-		 error_offset, error, str );
-	
-	lua_pushstring( L, buf );
-	lua_error( L );
+        char buf[256];
+        
+        sprintf( buf, "Cannot compile regular expression, at character "
+                 "%d.\nReason: %s.\nPattern was: '%s'",
+                 error_offset, error, str );
+        
+        lua_pushstring( L, buf );
+        lua_error( L );
      }
    
    pattern = lua_newuserdata( L, sizeof( struct pcre_userdata ) );
@@ -1294,13 +1294,13 @@ static int ilua_regex_compile( lua_State *L )
    
    if ( error )
      {
-	char buf[256];
-	
-	sprintf( buf, "Pattern study error: %s.\nPattern was: '%s'",
-		 error, str );
-	
-	lua_pushstring( L, buf );
-	lua_error( L );
+        char buf[256];
+        
+        sprintf( buf, "Pattern study error: %s.\nPattern was: '%s'",
+                 error, str );
+        
+        lua_pushstring( L, buf );
+        lua_error( L );
      }
    
    lua_remove( L, 1 );
@@ -1329,39 +1329,39 @@ static int ilua_regex_match( lua_State *L )
    
    if ( lua_isuserdata( L, 1 ) )
      {
-	struct pcre_userdata *pattern;
-	
-	pattern = lua_touserdata( L, 1 );
-	pattern_data = pattern->data;
-	extra = pattern->extra;
+        struct pcre_userdata *pattern;
+        
+        pattern = lua_touserdata( L, 1 );
+        pattern_data = pattern->data;
+        extra = pattern->extra;
      }
    else
      {
-	const char *str;
-	
-	str = luaL_checkstring( L, 1 );
-	
-	pattern_data = pcre_compile( str, 0, &error, &error_offset, NULL );
-	extra = NULL;
-	temporary = 1;
-	
-	if ( error )
-	  {
-	     char buf[256];
-	     
-	     sprintf( buf, "Cannot compile regular expression, at character "
-		      "%d.\nReason: %s.\nPattern was: '%s'",
-		      error_offset, error, str );
-	     
-	     lua_pushstring( L, buf );
-	     lua_error( L );
-	  }
+        const char *str;
+        
+        str = luaL_checkstring( L, 1 );
+        
+        pattern_data = pcre_compile( str, 0, &error, &error_offset, NULL );
+        extra = NULL;
+        temporary = 1;
+        
+        if ( error )
+          {
+             char buf[256];
+             
+             sprintf( buf, "Cannot compile regular expression, at character "
+                      "%d.\nReason: %s.\nPattern was: '%s'",
+                      error_offset, error, str );
+             
+             lua_pushstring( L, buf );
+             lua_error( L );
+          }
      }
    
    if ( lua_isnumber( L, 2 ) )
      {
-	offset = lua_tonumber( L, 2 );
-	lua_remove( L, 2 );
+        offset = lua_tonumber( L, 2 );
+        lua_remove( L, 2 );
      }
    else
      offset = 0;
@@ -1369,16 +1369,16 @@ static int ilua_regex_match( lua_State *L )
    text = luaL_checklstring( L, 2, &text_len );
    
    rc = pcre_exec( pattern_data, extra, text, text_len,
-		   offset, 0, ovector, 30 );
+                   offset, 0, ovector, 30 );
    
    /* No match. */
    if ( rc < 0 )
      {
-	lua_pop( L, 2 );
-	lua_pushnil( L );
-	if ( temporary )
-	  free( pattern_data );
-	return 1;
+        lua_pop( L, 2 );
+        lua_pushnil( L );
+        if ( temporary )
+          free( pattern_data );
+        return 1;
      }
    
    lua_newtable( L );
@@ -1394,18 +1394,18 @@ static int ilua_regex_match( lua_State *L )
      rc = 30;
    for ( i = 0; i < rc; i++ )
      {
-	lua_pushnumber( L, i );
-	lua_pushlstring( L, text + ovector[i*2],
-			 ovector[i*2+1] - ovector[i*2] );
-	lua_settable( L, -5 );
-	
-	lua_pushnumber( L, i );
-	lua_pushnumber( L, ovector[i*2] );
-	lua_settable( L, -4 );
-	
-	lua_pushnumber( L, i );
-	lua_pushnumber( L, ovector[i*2+1] );
-	lua_settable( L, -3 );
+        lua_pushnumber( L, i );
+        lua_pushlstring( L, text + ovector[i*2],
+                         ovector[i*2+1] - ovector[i*2] );
+        lua_settable( L, -5 );
+        
+        lua_pushnumber( L, i );
+        lua_pushnumber( L, ovector[i*2] );
+        lua_settable( L, -4 );
+        
+        lua_pushnumber( L, i );
+        lua_pushnumber( L, ovector[i*2+1] );
+        lua_settable( L, -3 );
      }
    
    lua_setfield( L, -3, "end_offset" );
@@ -1420,15 +1420,15 @@ static int ilua_regex_match( lua_State *L )
    for ( i = 0; i < name_count; i++ )
      {
         nr  = ((unsigned char *)name_table)[name_entry_size*i] * 256;
-	nr += ((unsigned char *)name_table)[name_entry_size*i+1];
-	
+        nr += ((unsigned char *)name_table)[name_entry_size*i+1];
+        
         if ( nr >= rc )
           continue;
         
-	lua_pushstring( L, name_table + name_entry_size*i + 2 );
-	lua_pushlstring( L, text + ovector[nr*2],
-			 ovector[nr*2+1] - ovector[nr*2] );
-	lua_settable( L, -3 );
+        lua_pushstring( L, name_table + name_entry_size*i + 2 );
+        lua_pushlstring( L, text + ovector[nr*2],
+                         ovector[nr*2+1] - ovector[nr*2] );
+        lua_settable( L, -3 );
      }
    
    lua_remove( L, 2 );

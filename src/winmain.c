@@ -104,8 +104,8 @@ void AddText( char *string )
    
    if ( strlen( buf ) > 2048 )
      {
-	strcat( buf, "Too many messages! Disabling the console.\r\n" );
-	closed = 1;
+        strcat( buf, "Too many messages! Disabling the console.\r\n" );
+        closed = 1;
      }
    else
      strcat( buf, string );
@@ -137,11 +137,11 @@ void debugf( char *string, ... )
    p = winbuf, b = buf;
    while( *b )
      {
-	if ( *b == '\n' )
-	  *(p++) = '\r', *(p++) = '\n';
-	else
-	  *(p++) = *b;
-	b++;
+        if ( *b == '\n' )
+          *(p++) = '\r', *(p++) = '\n';
+        else
+          *(p++) = *b;
+        b++;
      }
    *(p++) = '\r';
    *(p++) = '\n';
@@ -163,10 +163,10 @@ void win_sig_segv_handler( int sig )
    
    if ( logging )
      {
-	debugf( "Segmentation fault received!" );
-	debugf( "History:" );
-	for ( i = 0; i < 6 && debug[i]; i++ )
-	  debugf( " (%d) %s", i, debug[i] );
+        debugf( "Segmentation fault received!" );
+        debugf( "History:" );
+        for ( i = 0; i < 6 && debug[i]; i++ )
+          debugf( " (%d) %s", i, debug[i] );
      }
    
    fl = fopen( "crash.log", "w" );
@@ -200,14 +200,14 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i
    
    if ( WSAStartup( wVersionRequested, &wsaData ) )
      {
-	return 0;
+        return 0;
      }
    
    if ( LOBYTE( wsaData.wVersion ) != 1 ||
-	HIBYTE( wsaData.wVersion ) != 0 )
+        HIBYTE( wsaData.wVersion ) != 0 )
      {
-	WSACleanup( );
-	return 0;
+        WSACleanup( );
+        return 0;
      }
    /* End of WSA. */
    
@@ -242,7 +242,7 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i
    
    if ( !control )
      {
-	MessageBox( hwndMain,
+        MessageBox( hwndMain,
                     "At least one port to listen on must be defined!",
                     "IronMoon Warning", 0 );
      }
@@ -254,8 +254,8 @@ int WINAPI WinMain( HINSTANCE hInst, HINSTANCE hPrevInstance, LPSTR lpCmdLine, i
    /* Main Loop. */
    while( GetMessage( &msg, NULL, 0, 0 ) )
      {
-	TranslateMessage( &msg );
-	DispatchMessage( &msg );
+        TranslateMessage( &msg );
+        DispatchMessage( &msg );
      }
    
    WSACleanup( );
@@ -290,8 +290,8 @@ int CreateMainWindow( HINSTANCE hInstance )
    
    if ( !RegisterClassEx( &wndClass ) )
      {
-	MessageBox( NULL, "Unable to register the Main Window class!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to register the Main Window class!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /*** Initialize the Common Controls we need. ***/
@@ -300,9 +300,9 @@ int CreateMainWindow( HINSTANCE hInstance )
    
    if ( !InitCommonControlsEx( &icc ) )
      {
-	MessageBox( NULL, "Unable to initialize the needed Common Controls!"
-		    " (Tab Control Classes and List View Classes)", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to initialize the needed Common Controls!"
+                    " (Tab Control Classes and List View Classes)", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /*** Create our Main Window. ***/
@@ -310,14 +310,14 @@ int CreateMainWindow( HINSTANCE hInstance )
    sprintf( title, "IronMoon v%d.%d", main_version_major, main_version_minor );
    
    hwndMain = CreateWindowEx( 0, "MainWindowClass", title,
-			      WS_OVERLAPPEDWINDOW,
-			      CW_USEDEFAULT, CW_USEDEFAULT, 400, 300,
-			      NULL, NULL, hInstance, NULL );
+                              WS_OVERLAPPEDWINDOW,
+                              CW_USEDEFAULT, CW_USEDEFAULT, 400, 300,
+                              NULL, NULL, hInstance, NULL );
    
    if ( !hwndMain )
      {
-	MessageBox( NULL, "Unable to create the Main Window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the Main Window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /*** Create the main Tab Control. ***/
@@ -325,14 +325,14 @@ int CreateMainWindow( HINSTANCE hInstance )
    GetClientRect( hwndMain, &rcClient );
    
    hwndTab = CreateWindowEx( 0, WC_TABCONTROL, "",
-			     WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
-			     0, 0, rcClient.right, rcClient.bottom,
-			     hwndMain, NULL, hInstance, NULL );
+                             WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
+                             0, 0, rcClient.right, rcClient.bottom,
+                             hwndMain, NULL, hInstance, NULL );
    
    if ( !hwndTab )
      {
-	MessageBox( NULL, "Unable to create the Tab Control window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the Tab Control window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /* And the tabs. */
@@ -355,14 +355,14 @@ int CreateMainWindow( HINSTANCE hInstance )
    TabCtrl_AdjustRect( hwndTab, FALSE, &rcClient );
    
    hwndEdit = CreateWindowEx( WS_EX_CLIENTEDGE, "EDIT", "",
-			      WS_BORDER | WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | ES_READONLY,
-			      rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
-			      hwndMain, NULL, hInstance, NULL );
+                              WS_BORDER | WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | ES_READONLY,
+                              rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
+                              hwndMain, NULL, hInstance, NULL );
    
    if ( !hwndEdit )
      {
-	MessageBox( NULL, "Unable to create the main Console window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the main Console window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /* Initialize its colours. */
@@ -374,22 +374,22 @@ int CreateMainWindow( HINSTANCE hInstance )
    /*** Create the modules List View. ***/
    
    hwndMods = CreateWindowEx( WS_EX_CLIENTEDGE, WC_LISTVIEW, "",
-			      WS_BORDER | WS_CHILD | LVS_ICON,
-			      rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
-			      hwndMain, NULL, hInstance, NULL );
+                              WS_BORDER | WS_CHILD | LVS_ICON,
+                              rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
+                              hwndMain, NULL, hInstance, NULL );
    
    if ( !hwndMods )
      {
-	MessageBox( NULL, "Unable to create the List View window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the List View window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /* Create the Icon Lists for the List View. */
    
    iLarge = ImageList_Create( GetSystemMetrics( SM_CXICON ),
-			      GetSystemMetrics( SM_CYICON ), ILC_MASK, 1, 1 );
+                              GetSystemMetrics( SM_CYICON ), ILC_MASK, 1, 1 );
    iSmall = ImageList_Create( GetSystemMetrics( SM_CXSMICON ),
-			      GetSystemMetrics( SM_CYSMICON ), ILC_MASK, 1, 1 );
+                              GetSystemMetrics( SM_CYSMICON ), ILC_MASK, 1, 1 );
    
    hIcon = LoadIcon( hInstance, MAKEINTRESOURCE( ID_MOD_ICON ) );
    ImageList_AddIcon( iLarge, hIcon );
@@ -435,8 +435,8 @@ int CreateEditorWindow( HINSTANCE hInstance )
    
    if ( !RegisterClassEx( &wndClass ) )
      {
-	MessageBox( NULL, "Unable to register the Main Window class!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to register the Main Window class!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /*** Initialize the Common Controls we need. ***/
@@ -445,22 +445,22 @@ int CreateEditorWindow( HINSTANCE hInstance )
    
    if ( !InitCommonControlsEx( &icc ) )
      {
-	MessageBox( NULL, "Unable to initialize the needed Common Controls!"
-		    " (Toolbar Classes and Rebar Classes)", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to initialize the needed Common Controls!"
+                    " (Toolbar Classes and Rebar Classes)", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /*** Create the Editor's Main Window. ***/
    
    hwndEMain = CreateWindowEx( 0, "EditorWindowClass", "Editor",
-			       WS_OVERLAPPEDWINDOW,
-			       CW_USEDEFAULT, CW_USEDEFAULT, 700, 500,
-			       NULL, NULL, hInstance, NULL );
+                               WS_OVERLAPPEDWINDOW,
+                               CW_USEDEFAULT, CW_USEDEFAULT, 700, 500,
+                               NULL, NULL, hInstance, NULL );
    
    if ( !hwndEMain )
      {
-	MessageBox( NULL, "Unable to create the Editor's Main Window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the Editor's Main Window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /*** Create the Editor's Edit Window. ***/
@@ -468,14 +468,14 @@ int CreateEditorWindow( HINSTANCE hInstance )
    GetClientRect( hwndEMain, &rcClient );
    
    hwndEEdit = CreateWindowEx( WS_EX_CLIENTEDGE, "EDIT", "",
-			       WS_BORDER | WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
-			       rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
-			       hwndEMain, NULL, hInstance, NULL );
+                               WS_BORDER | WS_VISIBLE | WS_CHILD | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
+                               rcClient.left, rcClient.top, rcClient.right, rcClient.bottom,
+                               hwndEMain, NULL, hInstance, NULL );
    
    if ( !hwndEEdit )
      {
-	MessageBox( NULL, "Unable to create the Editor's Edit Window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the Editor's Edit Window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /* Set the Font to Fixed. */
@@ -489,9 +489,9 @@ int CreateEditorWindow( HINSTANCE hInstance )
    /*** Create the Editor's Toolbar Window. ***/
    
    hwndEToolbar = CreateWindowEx( 0, TOOLBARCLASSNAME, NULL,
-				  WS_CHILD | WS_VISIBLE | CCS_ADJUSTABLE | TBSTYLE_FLAT,
-				  0, 0, 0, 0,
-				  hwndEMain, NULL, hInstance, NULL );
+                                  WS_CHILD | WS_VISIBLE | CCS_ADJUSTABLE | TBSTYLE_FLAT,
+                                  0, 0, 0, 0,
+                                  hwndEMain, NULL, hInstance, NULL );
    
    SendMessage(hwndEToolbar, TB_BUTTONSTRUCTSIZE, (WPARAM) sizeof( TBBUTTON ), 0 );
    
@@ -519,21 +519,21 @@ int CreateEditorWindow( HINSTANCE hInstance )
    tbb[i++].iString = iClear;
    
    SendMessage( hwndEToolbar, TB_ADDBUTTONS, (WPARAM) i,
-		(LPARAM) (LPTBBUTTON) &tbb );
+                (LPARAM) (LPTBBUTTON) &tbb );
    
    SendMessage( hwndEToolbar, TB_AUTOSIZE, 0, 0 );
    
    /*** Create the Editor's Rebar Window. ***/
    
    hwndERebar = CreateWindowEx( WS_EX_TOOLWINDOW, REBARCLASSNAME, NULL,
-				WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | CCS_NODIVIDER,
-				0, 0, 100, 100,
-				hwndEMain, NULL, hInstance, NULL );
+                                WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN | RBS_VARHEIGHT | CCS_NODIVIDER,
+                                0, 0, 100, 100,
+                                hwndEMain, NULL, hInstance, NULL );
    
    if ( !hwndERebar )
      {
-	MessageBox( NULL, "Unable to create the Editor's Rebar Window!", "Window Creation Error", MB_ICONERROR );
-	return 0;
+        MessageBox( NULL, "Unable to create the Editor's Rebar Window!", "Window Creation Error", MB_ICONERROR );
+        return 0;
      }
    
    /* Initialize common members. */
@@ -551,7 +551,7 @@ int CreateEditorWindow( HINSTANCE hInstance )
    rbBand.fStyle = RBBS_CHILDEDGE | RBBS_FIXEDBMP;
    
    //    rbBand.hbmBack = LoadBitmap( hInstance, MAKEINTRESOURCE( IDB_BACKGRND ) );
-	
+        
    dwBtnSize = SendMessage( hwndEToolbar, TB_GETBUTTONSIZE, 0, 0 );
    
    rbBand.lpText = "Toolbar";
@@ -608,17 +608,17 @@ void LoadComposer( )
    
    while( *p )
      {
-	if ( *p == '\r' && *(p+1) == '\n' )
-	  {
-	     *(b++) = *(p++);
-	     *(b++) = *(p++);
-	     continue;
-	  }
-	
-	if ( *p == '\n' )
-	  *(b++) = '\r';
-	
-	*(b++) = *(p++);
+        if ( *p == '\r' && *(p+1) == '\n' )
+          {
+             *(b++) = *(p++);
+             *(b++) = *(p++);
+             continue;
+          }
+        
+        if ( *p == '\n' )
+          *(b++) = '\r';
+        
+        *(b++) = *(p++);
      }
    
    *b = 0;
@@ -631,9 +631,9 @@ void LoadComposer( )
 void MakeTrayTooltip( char *buf )
 {
    sprintf( buf, "IronMoon v%d.%d (Client: %s - Server: %s)",
-	    main_version_major, main_version_minor,
-	    client ? ( client_hostname[0] ? client_hostname : "unknown" ) : "not connected",
-	    server ? ( server_hostname[0] ? server_hostname : "unknown" ) : "not connected" );
+            main_version_major, main_version_minor,
+            client ? ( client_hostname[0] ? client_hostname : "unknown" ) : "not connected",
+            server ? ( server_hostname[0] ? server_hostname : "unknown" ) : "not connected" );
    buf[63] = 0;
 }
 
@@ -667,105 +667,105 @@ char *win_str_error( int error )
    switch( error )
      {
       case WSAEINTR:
-	return "Interrupted function call";
+        return "Interrupted function call";
       case WSAEACCES:
-	return "Permission denied";
+        return "Permission denied";
       case WSAEFAULT:
-	return "Bad address";
+        return "Bad address";
       case WSAEINVAL:
-	return "Invalid argument";
+        return "Invalid argument";
       case WSAEMFILE:
-	return "Too many open files";
+        return "Too many open files";
       case WSAEWOULDBLOCK:
-	return "Resource temporarily unavailable";
+        return "Resource temporarily unavailable";
       case WSAEINPROGRESS:
-	return "Operation now in progress";
+        return "Operation now in progress";
       case WSAEALREADY:
-	return "Operation already in progress";
+        return "Operation already in progress";
       case WSAENOTSOCK:
-	return "Socket operation on nonsocket";
+        return "Socket operation on nonsocket";
       case WSAEDESTADDRREQ:
-	return "Destination address required";
+        return "Destination address required";
       case WSAEMSGSIZE:
-	return "Message too long";
+        return "Message too long";
       case WSAEPROTOTYPE:
-	return "Protocol wrong type for socket";
+        return "Protocol wrong type for socket";
       case WSAENOPROTOOPT:
-	return "Bad protocol option";
+        return "Bad protocol option";
       case WSAEPROTONOSUPPORT:
-	return "Protocol not supported";
+        return "Protocol not supported";
       case WSAESOCKTNOSUPPORT:
-	return "Socket type not supported";
+        return "Socket type not supported";
       case WSAEOPNOTSUPP:
-	return "Operation not supported";
+        return "Operation not supported";
       case WSAEPFNOSUPPORT:
-	return "Protocol family not supported";
+        return "Protocol family not supported";
       case WSAEAFNOSUPPORT:
-	return "Address family not supported by protocol family";
+        return "Address family not supported by protocol family";
       case WSAEADDRINUSE:
-	return "Address already in use";
+        return "Address already in use";
       case WSAEADDRNOTAVAIL:
-	return "Cannot assign requested address";
+        return "Cannot assign requested address";
       case WSAENETDOWN:
-	return "Network is down";
+        return "Network is down";
       case WSAENETUNREACH:
-	return "Network is unreachable";
+        return "Network is unreachable";
       case WSAENETRESET:
-	return "Network dropped connection on reset";
+        return "Network dropped connection on reset";
       case WSAECONNABORTED:
-	return "Software caused connection abort";
+        return "Software caused connection abort";
       case WSAECONNRESET:
-	return "Connection reset by peer";
+        return "Connection reset by peer";
       case WSAENOBUFS:
-	return "No buffer space available";
+        return "No buffer space available";
       case WSAEISCONN:
-	return "Socket is already connected";
+        return "Socket is already connected";
       case WSAENOTCONN:
-	return "Socket is not connected";
+        return "Socket is not connected";
       case WSAESHUTDOWN:
-	return "Cannot send after socket shutdown";
+        return "Cannot send after socket shutdown";
       case WSAETIMEDOUT:
-	return "Connection timed out";
+        return "Connection timed out";
       case WSAECONNREFUSED:
-	return "Connection refused";
+        return "Connection refused";
       case WSAEHOSTDOWN:
-	return "Host is down";
+        return "Host is down";
       case WSAEHOSTUNREACH:
-	return "No route to host";
+        return "No route to host";
       case WSAEPROCLIM:
-	return "Too many processes";
+        return "Too many processes";
       case WSASYSNOTREADY:
-	return "Network subsystem is unavailable";
+        return "Network subsystem is unavailable";
       case WSAVERNOTSUPPORTED:
-	return "Winsock.dll version out of range";
+        return "Winsock.dll version out of range";
       case WSANOTINITIALISED:
-	return "Successful WSAStartup not yet performed";
+        return "Successful WSAStartup not yet performed";
       case WSAEDISCON:
-	return "Graceful shutdown in progress";
+        return "Graceful shutdown in progress";
       case WSATYPE_NOT_FOUND:
-	return "Class type not found";
+        return "Class type not found";
       case WSAHOST_NOT_FOUND:
-	return "Host not found";
+        return "Host not found";
       case WSATRY_AGAIN:
-	return "Nonauthoritative host not found";
+        return "Nonauthoritative host not found";
       case WSANO_RECOVERY:
-	return "This is a nonrecoverable error";
+        return "This is a nonrecoverable error";
       case WSANO_DATA:
-	return "Valid name, no data record of requested type";
+        return "Valid name, no data record of requested type";
       case WSA_INVALID_HANDLE:
-	return "Specified event object handle is invalid";
+        return "Specified event object handle is invalid";
       case WSA_INVALID_PARAMETER:
-	return "One or more parameters are invalid";
+        return "One or more parameters are invalid";
       case WSA_IO_INCOMPLETE:
-	return "Overlapped I/O event object not in signaled state";
+        return "Overlapped I/O event object not in signaled state";
       case WSA_IO_PENDING:
-	return "Overlapped operations will complete later";
+        return "Overlapped operations will complete later";
       case WSA_NOT_ENOUGH_MEMORY:
-	return "Insufficient memory available";
+        return "Insufficient memory available";
       case WSA_OPERATION_ABORTED:
-	return "Overlapped operation aborted";
+        return "Overlapped operation aborted";
       case WSASYSCALLFAILURE:
-	return "System call failure";
+        return "System call failure";
      }
    
    return "Unknown error";
@@ -780,39 +780,39 @@ void win_update_descriptors( )
    for ( i = 0; i < 256; i++ )
      if ( sock_list[i] )
        {
-	  WSAAsyncSelect( i, hwndMain, 0, 0 );
-	  sock_list[i] = 0;
+          WSAAsyncSelect( i, hwndMain, 0, 0 );
+          sock_list[i] = 0;
        }
    
    i = 0;
    
    for ( d = descs; d; d = d->next )
      {
-	if ( d->fd < 1 )
-	  continue;
-	
-	if ( d->callback_in )
-	  WSAAsyncSelect( d->fd, hwndMain, UDM_WINSOCK_SELECT,
-			  ( d->callback_out ? FD_WRITE : 0 ) | FD_READ | FD_CLOSE | FD_ACCEPT );
-	
-	sock_list[i++] = d->fd;
+        if ( d->fd < 1 )
+          continue;
+        
+        if ( d->callback_in )
+          WSAAsyncSelect( d->fd, hwndMain, UDM_WINSOCK_SELECT,
+                          ( d->callback_out ? FD_WRITE : 0 ) | FD_READ | FD_CLOSE | FD_ACCEPT );
+        
+        sock_list[i++] = d->fd;
      }
    
    /* Update the System Tray icon. */
    if ( iconized )
      {
-	char buf[1024];
-	NOTIFYICONDATA nid;
-	
-	MakeTrayTooltip( buf );
-	
-	nid.cbSize = sizeof( NOTIFYICONDATA );
-	nid.hWnd = hwndMain;
-	nid.uID = 0;
-	nid.uFlags = NIF_ICON | NIF_TIP;
-	nid.hIcon = LoadIcon( hInstance, MAKEINTRESOURCE( ID_MAIN_ICON ) );
-	lstrcpy( nid.szTip, buf );
-	Shell_NotifyIcon( NIM_MODIFY, &nid );
+        char buf[1024];
+        NOTIFYICONDATA nid;
+        
+        MakeTrayTooltip( buf );
+        
+        nid.cbSize = sizeof( NOTIFYICONDATA );
+        nid.hWnd = hwndMain;
+        nid.uID = 0;
+        nid.uFlags = NIF_ICON | NIF_TIP;
+        nid.hIcon = LoadIcon( hInstance, MAKEINTRESOURCE( ID_MAIN_ICON ) );
+        lstrcpy( nid.szTip, buf );
+        Shell_NotifyIcon( NIM_MODIFY, &nid );
      }
 }
 
@@ -834,12 +834,12 @@ void win_update_modules( )
    
    for ( mod = modules; mod; mod = mod->next )
      {
-	lvi.iItem = i++;
-	lvi.iImage = 0;
-	lvi.iSubItem = 0;
-	lvi.pszText = mod->name;
-	
-	ListView_InsertItem( hwndMods, &lvi );
+        lvi.iItem = i++;
+        lvi.iImage = 0;
+        lvi.iSubItem = 0;
+        lvi.pszText = mod->name;
+        
+        ListView_InsertItem( hwndMods, &lvi );
      }
    
    UpdateWindow( hwndMods );
@@ -868,18 +868,18 @@ void check_descriptors( )
    /* What descriptors do we want to select? */
    for ( d = descs; d; d = d->next )
      {
-	if ( d->fd < 1 )
-	  continue;
-	
-	if ( d->callback_in )
-	  FD_SET( d->fd, &in_set );
-	if ( d->callback_out )
-	  FD_SET( d->fd, &out_set );
-	if ( d->callback_exc )
-	  FD_SET( d->fd, &exc_set );
-	
-	if ( maxdesc < d->fd )
-	  maxdesc = d->fd;
+        if ( d->fd < 1 )
+          continue;
+        
+        if ( d->callback_in )
+          FD_SET( d->fd, &in_set );
+        if ( d->callback_out )
+          FD_SET( d->fd, &out_set );
+        if ( d->callback_exc )
+          FD_SET( d->fd, &exc_set );
+        
+        if ( maxdesc < d->fd )
+          maxdesc = d->fd;
      }
    
    /* Don't block, return immediately. */
@@ -888,39 +888,39 @@ void check_descriptors( )
    
    if ( select( maxdesc+1, &in_set, &out_set, &exc_set, &pulsetime ) == SOCKET_ERROR )
      {
-	debugf( "check_descriptors: select error" );
+        debugf( "check_descriptors: select error" );
      }
    
    /* Go through the descriptor list. */
    for ( d = descs; d; d = d_next )
      {
-	d_next = d->next;
-	
-	/* Do we have a valid descriptor? */
-	if ( d->fd < 1 )
-	  continue;
-	
-	desc_name = d->name;
-	
-	current_descriptor = d;
-	
-	desc_section = "Reading from...";
-	if ( d->callback_in && FD_ISSET( d->fd, &in_set ) )
-	  (*d->callback_in)( d );
-	
-	if ( !current_descriptor )
-	  continue;
-	
-	desc_section = "Writing to...";
-	if ( d->callback_out && FD_ISSET( d->fd, &out_set ) )
-	  (*d->callback_out)( d );
-	
-	if ( !current_descriptor )
-	  continue;
-	
-	desc_section = "Exception handler at...";
-	if ( d->callback_exc && FD_ISSET( d->fd, &exc_set ) )
-	  (*d->callback_exc)( d );
+        d_next = d->next;
+        
+        /* Do we have a valid descriptor? */
+        if ( d->fd < 1 )
+          continue;
+        
+        desc_name = d->name;
+        
+        current_descriptor = d;
+        
+        desc_section = "Reading from...";
+        if ( d->callback_in && FD_ISSET( d->fd, &in_set ) )
+          (*d->callback_in)( d );
+        
+        if ( !current_descriptor )
+          continue;
+        
+        desc_section = "Writing to...";
+        if ( d->callback_out && FD_ISSET( d->fd, &out_set ) )
+          (*d->callback_out)( d );
+        
+        if ( !current_descriptor )
+          continue;
+        
+        desc_section = "Exception handler at...";
+        if ( d->callback_exc && FD_ISSET( d->fd, &exc_set ) )
+          (*d->callback_exc)( d );
      }
    desc_name = NULL;
 }
@@ -981,13 +981,13 @@ void SendBuffer( int ole )
    b = buf;
    while( *b )
      {
-	if ( *b == '\r' )
-	  {
-	     b++;
-	     continue;
-	  }
-	
-	*(p++) = *(b++);
+        if ( *b == '\r' )
+          {
+             b++;
+             continue;
+          }
+        
+        *(p++) = *(b++);
      }
    /* And don't let it end without a new line. */
    if ( bytes > 0 && *(b-1) != '\n' )
@@ -997,9 +997,9 @@ void SendBuffer( int ole )
    if ( client )
      {
         if ( !ole )
-	  clientff( C_B "Sending %d bytes...\n" C_0, bytes );
+          clientff( C_B "Sending %d bytes...\n" C_0, bytes );
         else
-	  clientff( C_B "Sent %d bytes. Check *echo, to verify.\n" C_0, bytes );
+          clientff( C_B "Sent %d bytes. Check *echo, to verify.\n" C_0, bytes );
      }
    
    if ( ole )
@@ -1062,15 +1062,15 @@ void BlendWindow( HWND hwndMain, DWORD dwTime, DWORD dwFlags )
    
    if ( !dll )
      {
-	return;
+        return;
      }
    
    func_AnimateWindow = (void *) GetProcAddress( dll, "AnimateWindow" );
    
    if ( !func_AnimateWindow )
      {
-	FreeLibrary( dll );
-	return;
+        FreeLibrary( dll );
+        return;
      }
    
    (func_AnimateWindow)( hwndMain, dwTime, dwFlags );
@@ -1083,149 +1083,149 @@ LRESULT CALLBACK MainWndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam 
    switch( msg )
      {
       case WM_CLOSE:
-	if ( server )
-	  {
-	     if ( MessageBox( hwndMain, "IronMoon is still connected to a server. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
-	       break;
-	  }
-	else if ( client )
-	  {
-	     if ( MessageBox( hwndMain, "Closing IronMoon will disconnect the current Client. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
-	       break;
-	  }
-	
-	BlendWindow( hwndMain, 400, AW_HIDE | AW_BLEND );
-	DestroyWindow( hwndMain );
-	
-	break;
-	
+        if ( server )
+          {
+             if ( MessageBox( hwndMain, "IronMoon is still connected to a server. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
+               break;
+          }
+        else if ( client )
+          {
+             if ( MessageBox( hwndMain, "Closing IronMoon will disconnect the current Client. Are you sure you want to quit?", "Confirm Close", MB_OKCANCEL ) != IDOK )
+               break;
+          }
+        
+        BlendWindow( hwndMain, 400, AW_HIDE | AW_BLEND );
+        DestroyWindow( hwndMain );
+        
+        break;
+        
       case WM_DESTROY:
-	PostQuitMessage( 0 );
-	break;
-	
-	//		case WM_PAINT:
-	//			UpdateWindow( hwndTab );
-	//			UpdateWindow( hwndEdit );
-	//			UpdateWindow( hwndMods );
-	//			break;
-	
+        PostQuitMessage( 0 );
+        break;
+        
+        //              case WM_PAINT:
+        //                      UpdateWindow( hwndTab );
+        //                      UpdateWindow( hwndEdit );
+        //                      UpdateWindow( hwndMods );
+        //                      break;
+        
       case WM_SIZE:
-	  {
-	     RECT rc;
-	     HDWP hdwp;
-	     
-	     /* Resize the Tab Control. */
-	     GetClientRect( hwndMain, &rc );
-	     
-	     hdwp = BeginDeferWindowPos( 2 );
-	     
-	     DeferWindowPos( hdwp, hwndTab, NULL, 0, 0, rc.right, rc.bottom, SWP_NOMOVE | SWP_NOZORDER );
-	     
-	     /* Resize the Edit window. */
-	     TabCtrl_AdjustRect( hwndTab, FALSE, &rc );
-	     
-	     DeferWindowPos( hdwp, hwndEdit, HWND_TOP, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 0 );
-	     DeferWindowPos( hdwp, hwndMods, HWND_TOP, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 0 );
-	     
-	     EndDeferWindowPos( hdwp );
-	  }
-	break;
-	
+          {
+             RECT rc;
+             HDWP hdwp;
+             
+             /* Resize the Tab Control. */
+             GetClientRect( hwndMain, &rc );
+             
+             hdwp = BeginDeferWindowPos( 2 );
+             
+             DeferWindowPos( hdwp, hwndTab, NULL, 0, 0, rc.right, rc.bottom, SWP_NOMOVE | SWP_NOZORDER );
+             
+             /* Resize the Edit window. */
+             TabCtrl_AdjustRect( hwndTab, FALSE, &rc );
+             
+             DeferWindowPos( hdwp, hwndEdit, HWND_TOP, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 0 );
+             DeferWindowPos( hdwp, hwndMods, HWND_TOP, rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top, 0 );
+             
+             EndDeferWindowPos( hdwp );
+          }
+        break;
+        
       case WM_GETMINMAXINFO:
-	((MINMAXINFO*)lParam)->ptMinTrackSize.x = 300;
-	((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
-	break;
-	
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.x = 300;
+        ((MINMAXINFO*)lParam)->ptMinTrackSize.y = 200;
+        break;
+        
       case WM_CTLCOLORSTATIC:
-	if ( (HWND) lParam == hwndEdit )
-	  {
-	     SetBkColor( (HDC) wParam, crEditBg );
-	     SetTextColor( (HDC) wParam, crEditFg );
-	     return (LRESULT) hbrEditBg;
-	  }
-	break;
-	
+        if ( (HWND) lParam == hwndEdit )
+          {
+             SetBkColor( (HDC) wParam, crEditBg );
+             SetTextColor( (HDC) wParam, crEditFg );
+             return (LRESULT) hbrEditBg;
+          }
+        break;
+        
       case WM_CREATE:
-	break;
-	
+        break;
+        
       case WM_TIMER:
-	UpdateTimer( );
-	if ( !timers )
-	  KillTimer( hwndMain, 0 );
-	break;
-	
+        UpdateTimer( );
+        if ( !timers )
+          KillTimer( hwndMain, 0 );
+        break;
+        
       case WM_NOTIFY:
-	switch ( ( ((LPNMHDR) lParam)->code ) )
-	  {
-	   case TCN_SELCHANGE:
-	       {
-		  int page;
-		  
-		  page = TabCtrl_GetCurSel( hwndTab );
-		  
-		  if ( page == TAB_CONSOLE || page == TAB_MINIMIZE )
-		    {
-		       if ( page == TAB_MINIMIZE )
-			 {
-			    ShowWindow( hwndMain, SW_MINIMIZE );
-			    ShowWindow( hwndMain, SW_HIDE );
-			    
-			    Iconize( );
-			    TabCtrl_SetCurSel( hwndTab, TAB_CONSOLE );
-			 }
-		       ShowWindow( hwndEdit, SW_SHOW );
-		       ShowWindow( hwndMods, SW_HIDE );
-		    }
-		  else if ( page == TAB_MODULES )
-		    {
-		       ShowWindow( hwndEdit, SW_HIDE );
-		       ShowWindow( hwndMods, SW_SHOW );
-		    }
-	       }
-	     break;
-	  }
-	break;
-	
+        switch ( ( ((LPNMHDR) lParam)->code ) )
+          {
+           case TCN_SELCHANGE:
+               {
+                  int page;
+                  
+                  page = TabCtrl_GetCurSel( hwndTab );
+                  
+                  if ( page == TAB_CONSOLE || page == TAB_MINIMIZE )
+                    {
+                       if ( page == TAB_MINIMIZE )
+                         {
+                            ShowWindow( hwndMain, SW_MINIMIZE );
+                            ShowWindow( hwndMain, SW_HIDE );
+                            
+                            Iconize( );
+                            TabCtrl_SetCurSel( hwndTab, TAB_CONSOLE );
+                         }
+                       ShowWindow( hwndEdit, SW_SHOW );
+                       ShowWindow( hwndMods, SW_HIDE );
+                    }
+                  else if ( page == TAB_MODULES )
+                    {
+                       ShowWindow( hwndEdit, SW_HIDE );
+                       ShowWindow( hwndMods, SW_SHOW );
+                    }
+               }
+             break;
+          }
+        break;
+        
       case WM_USER:
-	if ( lParam == WM_LBUTTONUP )
-	  {
-	     NOTIFYICONDATA nid;
-	     
-	     nid.cbSize = sizeof( NOTIFYICONDATA );
-	     nid.hWnd = hwndMain;
-	     nid.uID = 0;
-	     nid.uFlags = 0;
-	     Shell_NotifyIcon( NIM_DELETE, &nid );
-	     
-	     iconized = 0;
-	     
-	     ShowWindow( hwndMain, SW_SHOW );
-	     ShowWindow( hwndMain, SW_RESTORE );
-	     //                  AnimateWindow( hwndMain, 100, AW_CENTER | AW_ACTIVATE );
-	  }
-	break;
-	
+        if ( lParam == WM_LBUTTONUP )
+          {
+             NOTIFYICONDATA nid;
+             
+             nid.cbSize = sizeof( NOTIFYICONDATA );
+             nid.hWnd = hwndMain;
+             nid.uID = 0;
+             nid.uFlags = 0;
+             Shell_NotifyIcon( NIM_DELETE, &nid );
+             
+             iconized = 0;
+             
+             ShowWindow( hwndMain, SW_SHOW );
+             ShowWindow( hwndMain, SW_RESTORE );
+             //                  AnimateWindow( hwndMain, 100, AW_CENTER | AW_ACTIVATE );
+          }
+        break;
+        
       case UDM_WINSOCK_SELECT:
-	  {
-	     int event  = WSAGETSELECTEVENT( lParam );
-//	     int wsaerr = WSAGETSELECTERROR( lParam );
-	     
-	     switch( event )
-	       {
-		case FD_READ: break;
-		case FD_ACCEPT: break;
-		case FD_CLOSE: break;
-		default: break;
-	       }
-	     
-	     check_descriptors( );
-	     
-	     UpdateTimer( );
-	  }
-	break;
-	
+          {
+             int event  = WSAGETSELECTEVENT( lParam );
+//           int wsaerr = WSAGETSELECTERROR( lParam );
+             
+             switch( event )
+               {
+                case FD_READ: break;
+                case FD_ACCEPT: break;
+                case FD_CLOSE: break;
+                default: break;
+               }
+             
+             check_descriptors( );
+             
+             UpdateTimer( );
+          }
+        break;
+        
       default:
-	return DefWindowProc( hwnd, msg, wParam, lParam );
+        return DefWindowProc( hwnd, msg, wParam, lParam );
      }
    
    return 0;
@@ -1237,81 +1237,81 @@ LRESULT CALLBACK EditorWndProc( HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPara
    switch( msg )
      {
       case WM_CLOSE:
-	ShowWindow( hwndEMain, SW_HIDE );
-	break;
+        ShowWindow( hwndEMain, SW_HIDE );
+        break;
         
       case WM_DESTROY:
-	hwndEMain = NULL;
-	UnregisterClass( "EditorWindowClass", hInstance );
-	break;
+        hwndEMain = NULL;
+        UnregisterClass( "EditorWindowClass", hInstance );
+        break;
         
       case WM_SIZE:
-	  {
-	     RECT rc;
-	     
-	     GetClientRect( hwndEMain, &rc );
-	     
-	     MoveWindow( hwndEEdit, 0, 0, rc.right, rc.bottom, TRUE );
-	     
-	     UpdateWindow( hwndEMain );
-	  }
-	break;
-	
+          {
+             RECT rc;
+             
+             GetClientRect( hwndEMain, &rc );
+             
+             MoveWindow( hwndEEdit, 0, 0, rc.right, rc.bottom, TRUE );
+             
+             UpdateWindow( hwndEMain );
+          }
+        break;
+        
       case WM_COMMAND:
-	switch( LOWORD( wParam ) )
-	  {
-	   case ID_EDM_CLOSE:
-	     ShowWindow( hwndEMain, SW_HIDE );
-	     break;
-	     
-	   case ID_EDM_SENDNORMAL:
-	     SendBuffer( 0 );
-	     break;
-	     
-	   case ID_EDM_SENDSETOLE:
-	     SendBuffer( 1 );
-	     break;
-	     
-	   case ID_EDM_CLEAR:
-	     if ( hwndEEdit )
-	       SendMessage( hwndEEdit, WM_SETTEXT, 0, (LPARAM) "" );
-	     break;
-	     
-	   case ID_EDM_SAVEFILE:
-	     MessageBox( hwndEMain, "Not implemented yet. Sorry!", "Save to File", 0 );
-	     break;
-	     
-	   case ID_EDM_SAVEB1:
-	     SaveBuffer( 0 );
-	     break;
-	   case ID_EDM_SAVEB2:
-	     SaveBuffer( 1 );
-	     break;
-	   case ID_EDM_SAVEB3:
-	     SaveBuffer( 2 );
-	     break;
-	     
-	   case ID_EDM_LOADFILE:
-	     MessageBox( hwndEMain, "Not implemented yet. Sorry!", "Load from File", 0 );
-	     break;
-	     
-	   case ID_EDM_LOADB1:
-	     LoadBuffer( 0 );
-	     break;
-	   case ID_EDM_LOADB2:
-	     LoadBuffer( 1 );
-	     break;
-	   case ID_EDM_LOADB3:
-	     LoadBuffer( 2 );
-	     break;
-	     
-	   case ID_EDM_LOADCOMPOSER:
-	     LoadComposer( );
-	     break;
-	  }
+        switch( LOWORD( wParam ) )
+          {
+           case ID_EDM_CLOSE:
+             ShowWindow( hwndEMain, SW_HIDE );
+             break;
+             
+           case ID_EDM_SENDNORMAL:
+             SendBuffer( 0 );
+             break;
+             
+           case ID_EDM_SENDSETOLE:
+             SendBuffer( 1 );
+             break;
+             
+           case ID_EDM_CLEAR:
+             if ( hwndEEdit )
+               SendMessage( hwndEEdit, WM_SETTEXT, 0, (LPARAM) "" );
+             break;
+             
+           case ID_EDM_SAVEFILE:
+             MessageBox( hwndEMain, "Not implemented yet. Sorry!", "Save to File", 0 );
+             break;
+             
+           case ID_EDM_SAVEB1:
+             SaveBuffer( 0 );
+             break;
+           case ID_EDM_SAVEB2:
+             SaveBuffer( 1 );
+             break;
+           case ID_EDM_SAVEB3:
+             SaveBuffer( 2 );
+             break;
+             
+           case ID_EDM_LOADFILE:
+             MessageBox( hwndEMain, "Not implemented yet. Sorry!", "Load from File", 0 );
+             break;
+             
+           case ID_EDM_LOADB1:
+             LoadBuffer( 0 );
+             break;
+           case ID_EDM_LOADB2:
+             LoadBuffer( 1 );
+             break;
+           case ID_EDM_LOADB3:
+             LoadBuffer( 2 );
+             break;
+             
+           case ID_EDM_LOADCOMPOSER:
+             LoadComposer( );
+             break;
+          }
         
       default:
-	return DefWindowProc( hwnd, msg, wParam, lParam );
+        return DefWindowProc( hwnd, msg, wParam, lParam );
      }
    
    return 0;

@@ -141,10 +141,10 @@ struct area_data
 
 
 /* Exit flags. If more are added, change from 'short' to 'int'. */
-#define EXIT_NORMAL	1
-#define EXIT_STOPPING	2
-#define EXIT_OTHER_AREA	4
-#define EXIT_PATH	8
+#define EXIT_NORMAL     1
+#define EXIT_STOPPING   2
+#define EXIT_OTHER_AREA 4
+#define EXIT_PATH       8
 #define EXIT_UNLINKED  16
 #define EXIT_LOCKED    32
 
@@ -159,10 +159,10 @@ struct map_element
    
    short in_out;
    
-   short e;		/* - */
-   short s;		/* | */
-   short se;		/* \ */  /* se AND se_rev: */
-   short se_rev;	/* / */  /* X */
+   short e;             /* - */
+   short s;             /* | */
+   short se;            /* \ */  /* se AND se_rev: */
+   short se_rev;        /* / */  /* X */
    
    short extra_e;
    short extra_s;
@@ -232,21 +232,21 @@ struct element_data
 #define MAP_Y 10
 
 
-#define EX_N	1
-#define EX_NE	2
-#define EX_E	3
-#define EX_SE	4
-#define EX_S	5
-#define EX_SW	6
-#define EX_W	7
-#define EX_NW	8
-#define EX_U	9
-#define EX_D	10
-#define EX_IN	11
-#define EX_OUT	12
+#define EX_N    1
+#define EX_NE   2
+#define EX_E    3
+#define EX_SE   4
+#define EX_S    5
+#define EX_SW   6
+#define EX_W    7
+#define EX_NW   8
+#define EX_U    9
+#define EX_D    10
+#define EX_IN   11
+#define EX_OUT  12
 
 /* Map modes */
-#define NONE		0
-#define FOLLOWING	1
-#define CREATING	2
-#define GET_UNLOST	3
+#define NONE            0
+#define FOLLOWING       1
+#define CREATING        2
+#define GET_UNLOST      3

@@ -4204,7 +4204,7 @@ void process_buffer( char *raw_buffer, int bytes )
                        while ( isdigit( *p ) )
                          {
                             z_number *= 10;
-                            z_number += *p - '0';
+                            z_number += *(p++) - '0';
                          }
                        
                        /* Store it for later use. */

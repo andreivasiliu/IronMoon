@@ -4269,6 +4269,7 @@ void process_buffer( char *raw_buffer, int bytes )
                        
                        /* Clean it up. */
                        memset( l.colour, 0, normal_pos * sizeof(char*) );
+                       memset( l.mxp_z_code, 0, normal_pos * sizeof(char) );
                        memset( l.gag_char, 0, normal_pos * sizeof(short) );
                        for ( i = 0; i < normal_pos; i++ )
                          if ( l.inlines[i] )

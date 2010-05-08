@@ -2862,7 +2862,7 @@ void handle_atcp( char *msg )
    
    else if ( !strncmp( act, "Client.Compose", 15 ) && we_control_it )
      {
-#if defined( FOR_WINDOWS )
+#if defined( FOR_WINDOWS ) && defined( USE_COMPOSER )
         void win_composer_contents( char *string );
         
         if ( body && body[0] )

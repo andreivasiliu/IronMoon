@@ -13,6 +13,10 @@
 
 #include "module.h"
 
+#ifdef USE_LUAJIT
+# include <luajit.h>
+#endif
+
 
 int i_lua_version_major = 0;
 int i_lua_version_minor = 8;
@@ -243,6 +247,9 @@ int open_ilua_module( char *name )
    
    /* Initialize it. */
    L = luaL_newstate( );
+#ifdef USE_LUAJIT
+   luaJIT_setmode(L, 0, LUAJIT_MODE_ENGINE | LUAJIT_MODE_ON);
+#endif
    mod->L = L;
    
    luaL_openlibs( L );
@@ -720,14 +727,14 @@ int i_lua_process_client_command( char *cmd )
    p = get_string( cmd, buf, 4096 );
    if ( strcmp( buf, "`il" ) && strcmp( buf, "`ilua" ) )
      {
-        int i;
+        int i = 0;
         
         for ( mod = ilua_modules; mod; mod = mod->next )
           {
              i |= ilua_callback( mod->L, "client_commands", cmd + 1, mod->work_dir );
           }
         
-        return i;
+        return !i;
      }
    
    p = get_string( p, buf, 4096 );
@@ -1286,7 +1293,7 @@ static int ilua_regex_compile( lua_State *L )
    
    if ( error )
      {
-        char buf[256];
+        char buf[4096];
         
         sprintf( buf, "Cannot compile regular expression, at character "
                  "%d.\nReason: %s.\nPattern was: '%s'",
@@ -1303,7 +1310,7 @@ static int ilua_regex_compile( lua_State *L )
    
    if ( error )
      {
-        char buf[256];
+        char buf[4096];
         
         sprintf( buf, "Pattern study error: %s.\nPattern was: '%s'",
                  error, str );
@@ -1367,10 +1374,10 @@ static int ilua_regex_match( lua_State *L )
           }
      }
    
-   if ( lua_isnumber( L, 2 ) )
+   if ( lua_isnumber( L, 3 ) )
      {
-        offset = lua_tonumber( L, 2 );
-        lua_remove( L, 2 );
+        offset = lua_tonumber( L, 3 );
+        lua_remove( L, 3 );
      }
    else
      offset = 0;

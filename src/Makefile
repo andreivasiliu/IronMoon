@@ -24,6 +24,9 @@ ifeq ($(OS),Win32)
  C_FLAGS += -I../deps -DFOR_WINDOWS
 endif
 
+# Comment/uncomment to disable/enable LuaJIT support
+#C_FLAGS += -DUSE_LUAJIT
+
 
 all: $(BIN)
 

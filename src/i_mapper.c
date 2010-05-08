@@ -5887,11 +5887,11 @@ void parse_sprint( char *line )
 
 void parse_follow( char *line )
 {
-   static char msg[256];
+   static char msg[4096];
    static int in_message;
    char *to;
    
-   if ( mode != FOLLOWING || !current_room )
+   if ( mode != FOLLOWING || !current_room || strlen(line) >= 256 )
      return;
    
    if ( !cmp( "You follow *", line ) )

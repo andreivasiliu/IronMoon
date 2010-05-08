@@ -76,7 +76,7 @@
 #define TELOPT_COMPRESS2 86 /* MCCPv2 */
 #define TELOPT_MXP 91       /* MXP - Mud eXtension Protocol. */
 
-#define INPUT_BUF 4096
+#define INPUT_BUF 8192
 
 /*
 #ifndef __attribute__

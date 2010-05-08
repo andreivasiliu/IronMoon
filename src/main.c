@@ -3856,7 +3856,11 @@ void print_paragraph( LINES *l )
           {
              /* Raw, then colour, then inline, then zcode, then normal. */
              while ( !l->insert_point[raw_pos] )
-               ADD_CHAR( l->raw[raw_pos++] );
+               {
+                  if ( !l->gag_raw[raw_pos] )
+                    ADD_CHAR( l->raw[raw_pos] );
+                  raw_pos++;
+               }
              
              p = l->colour[normal_pos];
              if ( p )
@@ -4091,6 +4095,10 @@ void process_buffer( char *raw_buffer, int bytes )
              raw_buffer_size += 4096;
              l.raw              = realloc( l.raw,               raw_buffer_size );
              l.insert_point     = realloc( l.insert_point,      raw_buffer_size );
+             l.gag_raw          = realloc( l.gag_raw,           raw_buffer_size );
+             
+             memset( l.gag_raw + raw_buffer_size - 4096, 0,
+                     4096 * sizeof(char) );
           }
         if ( normal_pos == normal_buffer_size )
           {
@@ -4148,6 +4156,8 @@ void process_buffer( char *raw_buffer, int bytes )
           {
              if ( es && es != -1 )
                {
+                  int i;
+                  
                   /* Colourful! */
                   if ( l.raw[raw_pos] == 'm' )
                     {
@@ -4189,7 +4199,8 @@ void process_buffer( char *raw_buffer, int bytes )
                        l.colour[normal_pos] =
                          colour_list[colour_is_bright][foreground_colour];
                        
-                       raw_pos -= es;
+                       for ( i = 0; i < es; i++ )
+                         l.gag_raw[raw_pos - i] = 1;
                     }
                   /* An MXP marker? */
                   else if ( l.raw[raw_pos] == 'z' )
@@ -4210,7 +4221,8 @@ void process_buffer( char *raw_buffer, int bytes )
                        /* Store it for later use. */
                        l.mxp_z_code[normal_pos] = z_number;
                        
-                       raw_pos -= es;
+                       for ( i = 0; i < es; i++ )
+                         l.gag_raw[raw_pos - i] = 1;
                     }
                   else
                     debugf("Unknown escape code; it ends with '%c'.", l.raw[raw_pos]);
@@ -4268,8 +4280,9 @@ void process_buffer( char *raw_buffer, int bytes )
                          }
                        
                        /* Clean it up. */
+                       memset( l.gag_raw, 0, raw_pos * sizeof(char) );
                        memset( l.colour, 0, normal_pos * sizeof(char*) );
-                       memset( l.mxp_z_code, 0, normal_pos * sizeof(char) );
+                       memset( l.mxp_z_code, -1, normal_pos * sizeof(char) );
                        memset( l.gag_char, 0, normal_pos * sizeof(short) );
                        for ( i = 0; i < normal_pos; i++ )
                          if ( l.inlines[i] )

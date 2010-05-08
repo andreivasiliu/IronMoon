@@ -716,10 +716,19 @@ int i_lua_process_client_command( char *cmd )
    char buf[4096], *p;
    ILUA_MOD *mod;
    
-   /* Skip `il/ilua, and get the command */
+   /* Keep `il commands to ourselves; the rest, pass on to the modules. */
    p = get_string( cmd, buf, 4096 );
    if ( strcmp( buf, "`il" ) && strcmp( buf, "`ilua" ) )
-     return 1;
+     {
+        int i;
+        
+        for ( m = ilua_modules; m; m = m->next )
+          {
+             i |= ilua_callback( m->L, "client_commands", cmd + 1, m->work_dir );
+          }
+        
+        return i;
+     }
    
    p = get_string( p, buf, 4096 );
    
@@ -1642,6 +1651,7 @@ int ilua_config_newindex( lua_State *L )
  *    unload = nil,
  *    server_paragraph = nil,
  *    client_aliases = nil,
+ *    client_commands = nil,
  *    
  *    -- Communication
  *    echo

@@ -722,9 +722,9 @@ int i_lua_process_client_command( char *cmd )
      {
         int i;
         
-        for ( m = ilua_modules; m; m = m->next )
+        for ( mod = ilua_modules; mod; mod = mod->next )
           {
-             i |= ilua_callback( m->L, "client_commands", cmd + 1, m->work_dir );
+             i |= ilua_callback( mod->L, "client_commands", cmd + 1, mod->work_dir );
           }
         
         return i;
